@@ -130,7 +130,7 @@ def get_performance(model, real_training, fake_training, real_test, fake_test, r
 
     performance_validation_real = accurate_count_real_validation / float(total_real_training)
     performance_validation_fake = accurate_count_fake_validation / float(total_fake_training)
-    performance_validation_total = accurate_count_real_validation + accurate_count_fake_validation / float(total_real_training) + float(total_fake_training)
+    performance_validation_total = (accurate_count_real_validation + accurate_count_fake_validation) / (float(total_real_training) + float(total_fake_training))
 
     return performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total
 
