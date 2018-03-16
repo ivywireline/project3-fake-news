@@ -130,8 +130,9 @@ def get_performance(model, real_training, fake_training, real_test, fake_test, r
 
     performance_validation_real = accurate_count_real_validation / float(total_real_training)
     performance_validation_fake = accurate_count_fake_validation / float(total_fake_training)
+    performance_validation_total = accurate_count_real_validation + accurate_count_fake_validation / float(total_real_training) + float(total_fake_training)
 
-    return performance_training, performance_test, performance_validation_real, performance_validation_fake
+    return performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total
 
 
 if __name__ == '__main__':
@@ -154,7 +155,7 @@ if __name__ == '__main__':
 
     model = train_model(real_training, fake_training, m, p)
 
-    performance_training, performance_test, performance_validation_real, performance_validation_fake = get_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation)
+    performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total = get_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation)
 
     print "performance for training set is", performance_training
 
@@ -163,6 +164,8 @@ if __name__ == '__main__':
     print "performance for validation set for real headlines is", performance_validation_real
 
     print "performance for validation set for fake headlines is", performance_validation_fake
+
+    print "performance for the entire validation set is", performance_validation_total
 
     # high_fake = [a for a in fake_counts if a in real_counts and fake_counts[a] > 3 and fake_counts[a] > real_counts[a]]
 
