@@ -89,11 +89,17 @@ def predict_model(model, headline):
     # print real_prob, fake_prob
     return real_prob > fake_prob
 
-def get_performance(model, real_training, fake_training, real_test, fake_test):
+def get_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation):
     accurate_count_training = 0
     accurate_count_test = 0
     total_training = len(real_training) + len(fake_training)
     total_test = len(real_test) + len(fake_test)
+
+    # For debugging purposes
+    total_real_training = len(real_validation)
+    total_fake_training = len(fake_validation)
+    accurate_count_real_validation = 0
+    accurate_count_fake_validation = 0
 
     for real_sample in real_training:
         if predict_model(model, real_sample):
@@ -111,10 +117,21 @@ def get_performance(model, real_training, fake_training, real_test, fake_test):
         if not predict_model(model, fake_sample):
             accurate_count_test += 1
 
+    for real_sample in real_validation:
+        if predict_model(model, real_sample):
+            accurate_count_real_validation += 1
+
+    for fake_sample in fake_validation:
+        if not predict_model(model, fake_sample):
+            accurate_count_fake_validation += 1
+
     performance_training = accurate_count_training / float(total_training)
     performance_test = accurate_count_test / float(total_test)
 
-    return performance_training, performance_test
+    performance_validation_real = accurate_count_real_validation / float(total_real_training)
+    performance_validation_fake = accurate_count_fake_validation / float(total_fake_training)
+
+    return performance_training, performance_test, performance_validation_real, performance_validation_fake
 
 
 if __name__ == '__main__':
@@ -137,11 +154,15 @@ if __name__ == '__main__':
 
     model = train_model(real_training, fake_training, m, p)
 
-    performance_training, performance_test = get_performance(model, real_training, fake_training, real_test, fake_test)
+    performance_training, performance_test, performance_validation_real, performance_validation_fake = get_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation)
 
     print "performance for training set is", performance_training
 
     print "performance for test set is", performance_test
+
+    print "performance for validation set for real headlines is", performance_validation_real
+
+    print "performance for validation set for fake headlines is", performance_validation_fake
 
     # high_fake = [a for a in fake_counts if a in real_counts and fake_counts[a] > 3 and fake_counts[a] > real_counts[a]]
 
