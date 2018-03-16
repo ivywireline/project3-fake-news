@@ -22,7 +22,7 @@ def get_wordlist(*args):
 def load_headlines(headlines_filename):
     with open(headlines_filename, 'r') as infile:
         headlines = [hl.strip() for hl in infile.readlines() if hl.strip()]
-    
+
     random.shuffle(headlines)
 
     num_validation = int(len(headlines) * 0.15)
@@ -86,8 +86,35 @@ def predict_model(model, headline):
         # if word in ENGLISH_STOP_WORDS: continue
     real_prob = math.exp(logprob_real) * real_class_prob
     fake_prob = math.exp(logprob_fake) * fake_class_prob
-    print real_prob, fake_prob
+    # print real_prob, fake_prob
     return real_prob > fake_prob
+
+def get_performance(model, real_training, fake_training, real_test, fake_test):
+    accurate_count_training = 0
+    accurate_count_test = 0
+    total_training = len(real_training) + len(fake_training)
+    total_test = len(real_test) + len(fake_test)
+
+    for real_sample in real_training:
+        if predict_model(model, real_sample):
+            accurate_count_training += 1
+
+    for fake_sample in fake_training:
+        if not predict_model(model, fake_sample):
+            accurate_count_training += 1
+
+    for real_sample in real_test:
+        if predict_model(model, real_sample):
+            accurate_count_test += 1
+
+    for fake_sample in fake_test:
+        if not predict_model(model, fake_sample):
+            accurate_count_test += 1
+
+    performance_training = accurate_count_training / float(total_training)
+    performance_test = accurate_count_test / float(total_test)
+
+    return performance_training, performance_test
 
 
 if __name__ == '__main__':
@@ -95,9 +122,9 @@ if __name__ == '__main__':
     real_training, real_validation, real_test = load_headlines(real_filename)
     fake_training, fake_validation, fake_test = load_headlines(fake_filename)
 
-    print 'Num training', 'Num validation', 'Num test'
-    print len(real_training), len(real_validation), len(real_test)
-    print len(fake_training), len(fake_validation), len(fake_test)
+    # print 'Num training', 'Num validation', 'Num test'
+    # print len(real_training), len(real_validation), len(real_test)
+    # print len(fake_training), len(fake_validation), len(fake_test)
 
     # real_counts = count_words(real_training)
     # fake_counts = count_words(fake_training)
@@ -109,7 +136,12 @@ if __name__ == '__main__':
     p = 1.0
 
     model = train_model(real_training, fake_training, m, p)
-    print predict_model(model, fake_validation[1])
+
+    performance_training, performance_test = get_performance(model, real_training, fake_training, real_test, fake_test)
+
+    print "performance for training set is", performance_training
+
+    print "performance for test set is", performance_test
 
     # high_fake = [a for a in fake_counts if a in real_counts and fake_counts[a] > 3 and fake_counts[a] > real_counts[a]]
 
@@ -117,6 +149,6 @@ if __name__ == '__main__':
 
     # with open('real_word_counts.json', 'w') as real_word_counts:
     #     json.dump(real_counts, real_word_counts)
-    
+
     # with open('fake_word_counts.json', 'w') as fake_word_counts:
     #     json.dump(fake_counts, fake_word_counts)
