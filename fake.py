@@ -42,6 +42,10 @@ if __name__ == '__main__':
     real_counts = count_words(real_training)
     fake_counts = count_words(fake_training)
 
+    high_fake = [a for a in fake_counts if a in real_counts and fake_counts[a] > 3 and fake_counts[a] > real_counts[a]]
+
+    print high_fake
+
     # with open('real_word_counts.json', 'w') as real_word_counts:
     #     json.dump(real_counts, real_word_counts)
     
