@@ -42,5 +42,8 @@ if __name__ == '__main__':
     real_counts = count_words(real_training)
     fake_counts = count_words(fake_training)
 
-    print real_counts
-    print fake_counts
+    # with open('real_word_counts.json', 'w') as real_word_counts:
+    #     json.dump(real_counts, real_word_counts)
+    
+    # with open('fake_word_counts.json', 'w') as fake_word_counts:
+    #     json.dump(fake_counts, fake_word_counts)
