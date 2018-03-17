@@ -39,23 +39,69 @@
 		%emph=[2]{word1,word2}, emphstyle=[2]{style},
 		caption=\lstname,
 	}
-	
+
 	\maketitle
 	\newpage
 	\begin{enumerate}
 		\item %1
 		The Real headline data set seems to be larger than the Fake headline data set.
 		Most of the headlines for both data sets are in English, but there are some French and Spanish headlines, as well as possibly other languages.
-		
+
 		Fake headlines seem to use ``Trump'' to refer to Donald Trump, while real headlines tend to use ``Donald Trump.''
 		Fake headlines also tend to use more sensational or inflammatory terms such as declaring something ``an hilarious fail,'' or have grammatical mistakes like the aforementioned example.
 		Headlines in general are all lowercase with no punctuation.
 		However, it seems that the real headlines tend to be truncated, while the fake headlines seem to all have the full text.
 		Some of the headlines are also misspelled (e.g. ``x jinpingi'' instead of ``xi jinping'').
-		
+
 		It is difficult to categorize headlines solely based on keywords, since the same word in different contexts could be either sensational, or factual.
 		Some useful keywords could be ``racist'' (5 occurrences in fake, 2 occurrences in real), ``hillary,'' (18 occurrences in real, 97 occurrences in fake), and ``rigged'' (3 occurrences in real, 15 occurrences in fake).
+
 		\item %2
+		\textbf{The following code snippet shows our implementation of the naive bayes algorithm}
+		\begin{lstlisting}
+def train_model(real_headlines, fake_headlines, m, p):
+    word_list = get_wordlist(real_headlines, fake_headlines)
+    real_counts = count_word_occurrance(real_headlines)
+    fake_counts = count_word_occurrance(fake_headlines)
+    probabilities_real = {}
+    probabilities_fake = {}
+    for word in word_list:
+        # if word in ENGLISH_STOP_WORDS: continue
+        if word in real_counts:
+            probabilities_real[word] = (real_counts[word] + m * p) / float(len(real_headlines) + m)
+            if probabilities_real[word] > 1:
+                raise ValueError
+        if word in fake_counts:
+            probabilities_fake[word] = (fake_counts[word] + m * p) / float(len(fake_headlines) + m)
+            if probabilities_fake[word] > 1:
+                raise ValueError
+
+    return probabilities_real, probabilities_fake, m, p, len(real_headlines), len(fake_headlines), word_list
+
+def predict_model(model, headline):
+    probabilities_real, probabilities_fake, m, p, real_count, fake_count, word_list = model
+    logprob_real = 0.0
+    logprob_fake = 0.0
+    real_class_prob = float(real_count) / (real_count + fake_count)
+    fake_class_prob = float(fake_count) / (real_count + fake_count)
+    headline_split = headline.split(' ')
+    for word in word_list:
+        if word in headline_split:
+            if word in probabilities_real:
+                logprob_real += math.log(probabilities_real[word])
+            if word in probabilities_fake:
+                logprob_fake += math.log(probabilities_fake[word])
+        else:
+            if word in probabilities_real:
+                logprob_real += math.log(1 - probabilities_real[word])
+            if word in probabilities_fake:
+                logprob_fake += math.log(1 - probabilities_fake[word])
+        # if word in ENGLISH_STOP_WORDS: continue
+    real_prob = math.exp(logprob_real) * real_class_prob
+    fake_prob = math.exp(logprob_fake) * fake_class_prob
+    # print real_prob, fake_prob
+    return real_prob > fake_prob
+		\end{lstlisting}
 		\item %3
 		\begin{enumerate}
 			\item %3a
