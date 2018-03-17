@@ -101,15 +101,11 @@ def predict_model(model, headline):
     for word in word_list:
         # if word in ENGLISH_STOP_WORDS: continue
         if word in headline_split:
-            if word in probabilities_real:
-                logprob_real += math.log(probabilities_real[word])
-            if word in probabilities_fake:
-                logprob_fake += math.log(probabilities_fake[word])
+            logprob_real += math.log(probabilities_real[word])
+            logprob_fake += math.log(probabilities_fake[word])
         else:
-            if word in probabilities_real:
-                logprob_real += math.log(1 - probabilities_real[word])
-            if word in probabilities_fake:
-                logprob_fake += math.log(1 - probabilities_fake[word])
+            logprob_real += math.log(1 - probabilities_real[word])
+            logprob_fake += math.log(1 - probabilities_fake[word])
     real_prob = math.exp(logprob_real) * real_class_prob
     fake_prob = math.exp(logprob_fake) * fake_class_prob
     # print real_prob, fake_prob
