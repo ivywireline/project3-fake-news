@@ -79,10 +79,10 @@
 		\]
 		We then return the class with the highest probability as our prediction.
 		
-		In order to tune the $m$ and $\hat{p}$ parameters, we trained the model with varying values, with $m \in [1, 100]$ and $p\in [0.1, 1.0]$, with a step of 1 and 0.1, respectively, and found the values that performed best on the validation set.
+		In order to tune the $m$ and $\hat{p}$ parameters, we trained the model with varying values, with $m \in [1, 20]$ and $p\in [0.1, 1.0]$, with a step of 1 and 0.1, respectively, and found the values that performed best on the validation set.
 		
 		The best params are as follows: \\
-		\[m = 93, \hat{p} = 0.4\]
+		\[m = 2, \hat{p} = 0.2\]
 		\\
 		The code is included below:
 		\begin{lstlisting}
@@ -96,12 +96,12 @@ def train_model(real_headlines, fake_headlines, m, p):
         # if word in ENGLISH_STOP_WORDS: continue
         if word in real_counts:
             probabilities_real[word] = (real_counts[word] + m * p) / float(len(real_headlines) + m)
-            if probabilities_real[word] > 1:
-                raise ValueError
+        else:
+            probabilities_real[word] = (0 + m * p) / float(len(real_headlines) + m)
         if word in fake_counts:
             probabilities_fake[word] = (fake_counts[word] + m * p) / float(len(fake_headlines) + m)
-            if probabilities_fake[word] > 1:
-                raise ValueError
+        else:
+            probabilities_fake[word] = (0 + m * p) / float(len(fake_headlines) + m)
 
     return probabilities_real, probabilities_fake, m, p, len(real_headlines), len(fake_headlines), word_list
 
@@ -115,15 +115,11 @@ def predict_model(model, headline):
     for word in word_list:
         # if word in ENGLISH_STOP_WORDS: continue
         if word in headline_split:
-            if word in probabilities_real:
-                logprob_real += math.log(probabilities_real[word])
-            if word in probabilities_fake:
-                logprob_fake += math.log(probabilities_fake[word])
+            logprob_real += math.log(probabilities_real[word])
+            logprob_fake += math.log(probabilities_fake[word])
         else:
-            if word in probabilities_real:
-                logprob_real += math.log(1 - probabilities_real[word])
-            if word in probabilities_fake:
-                logprob_fake += math.log(1 - probabilities_fake[word])
+            logprob_real += math.log(1 - probabilities_real[word])
+            logprob_fake += math.log(1 - probabilities_fake[word])
     real_prob = math.exp(logprob_real) * real_class_prob
     fake_prob = math.exp(logprob_fake) * fake_class_prob
     # print real_prob, fake_prob
@@ -132,7 +128,7 @@ def predict_model(model, headline):
 def tune_model(real_training, fake_training, real_validation, fake_validation):
     performance_report = {}
     m = 1
-    while m <= 100:
+    while m <= 20:
         p = 0.1
         while p <= 1:
             model = train_model(real_training, fake_training, m, p)
