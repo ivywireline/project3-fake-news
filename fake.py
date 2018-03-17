@@ -300,7 +300,7 @@ if __name__ == '__main__':
 
     model = train_model(real_training, fake_training, m, p)
 
-    performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total = get_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation)
+    performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total = get_total_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation)
 
     process_headlines(real_training, fake_training)
     batch_xs, batch_y_s = get_train(real_training, fake_training)
