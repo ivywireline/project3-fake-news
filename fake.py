@@ -118,8 +118,8 @@ def predict_model(model, headline):
 def tune_model(real_training, fake_training, real_validation, fake_validation):
     performance_report = {}
     m = 1
-    while m <= 10:
-        p = 0.0
+    while m <= 20:
+        p = 1.0
         while p <= 1:
             model = train_model(real_training, fake_training, m, p)
             performance = get_performance(model, real_validation, fake_validation)
