@@ -82,12 +82,12 @@ def train_model(real_headlines, fake_headlines, m, p):
         # if word in ENGLISH_STOP_WORDS: continue
         if word in real_counts:
             probabilities_real[word] = (real_counts[word] + m * p) / float(len(real_headlines) + m)
-            if probabilities_real[word] > 1:
-                raise ValueError
+        else:
+            probabilities_real[word] = (0 + m * p) / float(len(real_headlines) + m)
         if word in fake_counts:
             probabilities_fake[word] = (fake_counts[word] + m * p) / float(len(fake_headlines) + m)
-            if probabilities_fake[word] > 1:
-                raise ValueError
+        else:
+            probabilities_fake[word] = (0 + m * p) / float(len(fake_headlines) + m)
 
     return probabilities_real, probabilities_fake, m, p, len(real_headlines), len(fake_headlines), word_list
 
@@ -99,6 +99,7 @@ def predict_model(model, headline):
     fake_class_prob = float(fake_count) / (real_count + fake_count)
     headline_split = headline.split(' ')
     for word in word_list:
+        # if word in ENGLISH_STOP_WORDS: continue
         if word in headline_split:
             if word in probabilities_real:
                 logprob_real += math.log(probabilities_real[word])
@@ -109,7 +110,6 @@ def predict_model(model, headline):
                 logprob_real += math.log(1 - probabilities_real[word])
             if word in probabilities_fake:
                 logprob_fake += math.log(1 - probabilities_fake[word])
-        # if word in ENGLISH_STOP_WORDS: continue
     real_prob = math.exp(logprob_real) * real_class_prob
     fake_prob = math.exp(logprob_fake) * fake_class_prob
     # print real_prob, fake_prob
@@ -118,8 +118,8 @@ def predict_model(model, headline):
 def tune_model(real_training, fake_training, real_validation, fake_validation):
     performance_report = {}
     m = 1
-    while m <= 20:
-        p = 1.0
+    while m <= 100:
+        p = 0.1
         while p <= 1:
             model = train_model(real_training, fake_training, m, p)
             performance = get_performance(model, real_validation, fake_validation)
@@ -300,21 +300,23 @@ if __name__ == '__main__':
 
     model = train_model(real_training, fake_training, m, p)
 
-    performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total = get_total_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation)
+    # performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total = get_total_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation)
 
-    process_headlines(real_training, fake_training)
-    batch_xs, batch_y_s = get_train(real_training, fake_training)
+    # process_headlines(real_training, fake_training)
+    # batch_xs, batch_y_s = get_train(real_training, fake_training)
 
-    print "batch_xs", batch_xs
-    print "batch_y_s", batch_y_s
+    # print "batch_xs", batch_xs
+    # print "batch_y_s", batch_y_s
 
-    m = 100.0
-    p = 1.0
+    m = 93
+    p = 0.4
 
     model = train_model(real_training, fake_training, m, p)
     print get_performance(model, real_validation, fake_validation)
 
-    #print tune_model(real_training, fake_training, real_validation, fake_validation)
+
+
+    print tune_model(real_training, fake_training, real_validation, fake_validation)
 
     # high_fake = [a for a in fake_counts if a in real_counts and fake_counts[a] > 3 and fake_counts[a] > real_counts[a]]
 
