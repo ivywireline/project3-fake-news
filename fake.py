@@ -308,12 +308,13 @@ if __name__ == '__main__':
     print "batch_xs", batch_xs
     print "batch_y_s", batch_y_s
 
-    m = 1.0
+    m = 100.0
     p = 1.0
 
     model = train_model(real_training, fake_training, m, p)
+    print get_performance(model, real_validation, fake_validation)
 
-    print tune_model(real_training, fake_training, real_validation, fake_validation)
+    #print tune_model(real_training, fake_training, real_validation, fake_validation)
 
     # high_fake = [a for a in fake_counts if a in real_counts and fake_counts[a] > 3 and fake_counts[a] > real_counts[a]]
 
