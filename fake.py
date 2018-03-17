@@ -315,7 +315,6 @@ if __name__ == '__main__':
 
     print tune_model(real_training, fake_training, real_validation, fake_validation)
 
->>>>>>> 4bcba1d75cfe6f7311d7d733b0db39d4ab293fc4
     # high_fake = [a for a in fake_counts if a in real_counts and fake_counts[a] > 3 and fake_counts[a] > real_counts[a]]
 
     # print high_fake
