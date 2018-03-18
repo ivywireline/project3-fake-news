@@ -8,6 +8,7 @@ import torch.nn as nn
 import torchvision.datasets as dsets
 import torchvision.transforms as transforms
 from torch.autograd import Variable
+import cPickle as pickle
 
 from collections import defaultdict
 
@@ -17,7 +18,7 @@ real_filename = 'clean_real.txt'
 fake_filename = 'clean_fake.txt'
 
 # Key is a unique word string. Value is the index of the word in unique_words_set
-unique_words_dict = {}
+# unique_words_dict = {}
 
 
 class NaiveBayesModel:
@@ -237,6 +238,7 @@ def process_headlines(real_training, fake_training):
     unique_words_set = get_wordlist(real_training, fake_training)
     unique_words_number = len(unique_words_set)
     idx = 0
+    unique_words_dict = {}
 
     for word in unique_words_set:
         unique_words_dict[word] = idx
@@ -407,17 +409,15 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
         idx = 0
 
         headline_tensor = torch.from_numpy(train_x).double()
-        headline_var = Variable(headline_tensor).type(dtype_float)
+        headline_var = Variable(headline_tensor, requires_grad=False).type(dtype_float)
         # labels_var = Variable(labels)
         label_tensor = torch.from_numpy(train_y).double()
-        label_var = Variable(label_tensor).type(dtype_long)
+        label_var = Variable(label_tensor, requires_grad=False).type(dtype_long)
 
         # Forward + Backward + Optimize
         optimizer.zero_grad()
         output = model(headline_var)
 
-        print "output is ", output.data
-        print "label_var is ", label_var
         loss = loss_fn(output.double(), label_var)
         loss.backward()
         optimizer.step()
@@ -426,10 +426,14 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
                % (epoch+1, num_epochs, loss.data[0]))
 
     # Make predictions using set
-    x = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
+    x = Variable(torch.from_numpy(test_x).double(), requires_grad=False).type(dtype_float)
     y_pred = model(x).data.numpy()
 
-    print np.mean(y_pred == test_y)
+    print "y_pred is ", y_pred
+
+    print "test_y is ", test_y
+
+    # print np.mean(y_pred == test_y)
 
     return model
 
@@ -439,44 +443,44 @@ if __name__ == '__main__':
     real_training, real_validation, real_test = load_headlines(real_filename)
     fake_training, fake_validation, fake_test = load_headlines(fake_filename)
 
-    # These parameters need lots of tweaking
-    m = 1.0
-    p = 1.0
-
-    model = train_model(real_training, fake_training, m, p)
-
-    # performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total = get_total_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation)
-
-    # process_headlines(real_training, fake_training)
-    # batch_xs, batch_y_s = get_train(real_training, fake_training)
-
-    # print "batch_xs", batch_xs
-    # print "batch_y_s", batch_y_s
-
-    m = 93
-    p = 0.4
-
-    model = train_model(real_training, fake_training, m, p)
-    print get_performance(model, real_validation, fake_validation)
-
-
-
-    # print tune_model(real_training, fake_training, real_validation, fake_validation)
-
-    topbottom = get_top_bottom_word_occurrences(model)
-    topbottom_stop = get_top_bottom_word_occurrences(model, ENGLISH_STOP_WORDS)
-
-    for items in topbottom:
-        print "\\begin{enumerate}"
-        for i in items:
-            print "\t\\item {}".format(i)
-        print "\\end{enumerate}"
-
-    for items in topbottom_stop:
-        print "\\begin{enumerate}"
-        for i in items:
-            print "\t\\item {}".format(i)
-        print "\\end{enumerate}"
+    # # These parameters need lots of tweaking
+    # m = 1.0
+    # p = 1.0
+    #
+    # model = train_model(real_training, fake_training, m, p)
+    #
+    # # performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total = get_total_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation)
+    #
+    # # process_headlines(real_training, fake_training)
+    # # batch_xs, batch_y_s = get_train(real_training, fake_training)
+    #
+    # # print "batch_xs", batch_xs
+    # # print "batch_y_s", batch_y_s
+    #
+    # m = 93
+    # p = 0.4
+    #
+    # model = train_model(real_training, fake_training, m, p)
+    # print get_performance(model, real_validation, fake_validation)
+    #
+    #
+    #
+    # # print tune_model(real_training, fake_training, real_validation, fake_validation)
+    #
+    # topbottom = get_top_bottom_word_occurrences(model)
+    # topbottom_stop = get_top_bottom_word_occurrences(model, ENGLISH_STOP_WORDS)
+    #
+    # for items in topbottom:
+    #     print "\\begin{enumerate}"
+    #     for i in items:
+    #         print "\t\\item {}".format(i)
+    #     print "\\end{enumerate}"
+    #
+    # for items in topbottom_stop:
+    #     print "\\begin{enumerate}"
+    #     for i in items:
+    #         print "\t\\item {}".format(i)
+    #     print "\\end{enumerate}"
 
     # high_fake = [a for a in fake_counts if a in real_counts and fake_counts[a] > 3 and fake_counts[a] > real_counts[a]]
 
@@ -490,7 +494,8 @@ if __name__ == '__main__':
 
     ############################ Part 4 ################################
 
-    with open('dictionary_part4.json', 'r') as fp:
-        unique_words_dict = json.load(fp)
+    # dictionary_unique_words = process_headlines(real_training, fake_training)
+    # pickle.dump(dictionary_unique_words, open("Part4Dictionary.pkl", 'wb'))
+    unique_words_dict = pickle.load(open("Part4Dictionary.pkl"))
 
     model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
