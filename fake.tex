@@ -259,30 +259,37 @@ def get_performance(model, real, fake):
 			\begin{enumerate}
 				\item trump
 				\item donald
-				\item trumps
-				\item says
-				\item election
+				\item hillary
 				\item clinton
-				\item ban
-				\item north
-				\item korea
+				\item just
+				\item election
 				\item president
+				\item obama
+				\item new
+				\item says
 			\end{enumerate}
 		
 			The 10 words whose absence most strongly predicts that the news is fake
 			\begin{enumerate}
-				\item backfires
-				\item christians
-				\item honchos
-				\item nevertrump
-				\item boycottcomedian
-				\item pierson
-				\item uneducated
-				\item banishment
-				\item rep
-				\item tanking
+				\item friends
+				\item union
+				\item inspiration
+				\item searches
+				\item stunt
+				\item resolution
+				\item khanfar
+				\item rule
+				\item jab
+				\item expands
 			\end{enumerate}
 			\item %3c
+			It might make sense to remove stopwords when looking at the ratio of word frequency between the real and fake headlines, because these words are common, and would likely appear in most if not all headlines.
+			These words are also uninteresting on their own, and so they crowd up the word frequency rankings, possibly pushing more interesting words down the list.
+			Another reason for removing stopwords would be when the input set includes headlines of different languages.
+			This is because stopwords in one language are usually uncommon in other languages, and once again skew the results.
+			
+			It would make sense to keep stopwords because their presence could still help distinguish between classes, because one class might use certain stopwords in a different way, or use them more (or less) frequently than the other class.
+			Furthermore, in testing, we have found that training while excluding stopwords does not necessarily increase the performance of our model.
 			
 		\end{enumerate}
 	\item %4

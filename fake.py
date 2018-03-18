@@ -218,10 +218,10 @@ def get_total_performance(model, real_training, fake_training, real_test, fake_t
 def get_top_bottom_word_occurrences(model, stop_words=list()):
     keys_real = {k: model.probs_real[k] for k in model.probs_real if k not in stop_words}
 
-    keys_fake = {k: model.probs_real[k] for k in model.probs_fake if k not in stop_words}
+    keys_fake = {k: model.probs_fake[k] for k in model.probs_fake if k not in stop_words}
 
     sorted_keys_real = sorted(keys_real, key=keys_real.__getitem__, reverse=True)
-    sorted_keys_fake = sorted(keys_fake, key=keys_real.__getitem__, reverse=True)
+    sorted_keys_fake = sorted(keys_fake, key=keys_fake.__getitem__, reverse=True)
 
     real_top_10 = sorted_keys_real[:10]
     real_bottom_10 = sorted_keys_real[-10:]
@@ -361,6 +361,12 @@ if __name__ == '__main__':
 
     topbottom = get_top_bottom_word_occurrences(model)
     topbottom_stop = get_top_bottom_word_occurrences(model, ENGLISH_STOP_WORDS)
+
+    for items in topbottom:
+        print "\\begin{enumerate}"
+        for i in items:
+            print "\t\\item {}".format(i)
+        print "\\end{enumerate}"
 
     for items in topbottom_stop:
         print "\\begin{enumerate}"
