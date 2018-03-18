@@ -20,6 +20,19 @@ fake_filename = 'clean_fake.txt'
 unique_words_dict = {}
 
 
+class NaiveBayesModel:
+    def __init__(self, **kwargs):
+        self.probs_real = kwargs.pop('probs_real', None)
+        self.probs_fake = kwargs.pop('probs_fake', None)
+        self.m = kwargs.pop('m', 1)
+        self.p = kwargs.pop('p', 0.1)
+        self.num_real = kwargs.pop('num_real_headlines', 0)
+        self.num_fake = kwargs.pop('num_fake_headlines', 0)
+        self.word_list = kwargs.pop('word_list', list())
+
+        if kwargs:
+            raise TypeError('Unexpected **kwargs: %r' % kwargs)
+
 def get_wordlist(*args):
     """
     Returns a list containing all of the unique words in all lists of
@@ -72,6 +85,7 @@ def count_word_occurrance(headlines):
 
     return word_counts
 
+#################### Begin Part 2 ############################
 def train_model(real_headlines, fake_headlines, m, p):
     word_list = get_wordlist(real_headlines, fake_headlines)
     real_counts = count_word_occurrance(real_headlines)
@@ -82,34 +96,43 @@ def train_model(real_headlines, fake_headlines, m, p):
         # if word in ENGLISH_STOP_WORDS: continue
         if word in real_counts:
             probabilities_real[word] = (real_counts[word] + m * p) / float(len(real_headlines) + m)
-            if probabilities_real[word] > 1:
-                raise ValueError
+        else:
+            probabilities_real[word] = (0 + m * p) / float(len(real_headlines) + m)
         if word in fake_counts:
             probabilities_fake[word] = (fake_counts[word] + m * p) / float(len(fake_headlines) + m)
-            if probabilities_fake[word] > 1:
-                raise ValueError
+        else:
+            probabilities_fake[word] = (0 + m * p) / float(len(fake_headlines) + m)
 
-    return probabilities_real, probabilities_fake, m, p, len(real_headlines), len(fake_headlines), word_list
+    return NaiveBayesModel(
+        probs_real=probabilities_real,
+        probs_fake=probabilities_fake,
+        m=m,
+        p=p,
+        num_real_headlines=len(real_headlines),
+        num_fake_headlines=len(fake_headlines),
+        word_list=word_list,
+    )
 
 def predict_model(model, headline):
-    probabilities_real, probabilities_fake, m, p, real_count, fake_count, word_list = model
+    probabilities_real = model.probs_real
+    probabilities_fake = model.probs_fake
+    real_count = model.num_real
+    fake_count = model.num_fake
+    word_list = model.word_list
+
     logprob_real = 0.0
     logprob_fake = 0.0
     real_class_prob = float(real_count) / (real_count + fake_count)
     fake_class_prob = float(fake_count) / (real_count + fake_count)
     headline_split = headline.split(' ')
     for word in word_list:
-        if word in headline_split:
-            if word in probabilities_real:
-                logprob_real += math.log(probabilities_real[word])
-            if word in probabilities_fake:
-                logprob_fake += math.log(probabilities_fake[word])
-        else:
-            if word in probabilities_real:
-                logprob_real += math.log(1 - probabilities_real[word])
-            if word in probabilities_fake:
-                logprob_fake += math.log(1 - probabilities_fake[word])
         # if word in ENGLISH_STOP_WORDS: continue
+        if word in headline_split:
+            logprob_real += math.log(probabilities_real[word])
+            logprob_fake += math.log(probabilities_fake[word])
+        else:
+            logprob_real += math.log(1 - probabilities_real[word])
+            logprob_fake += math.log(1 - probabilities_fake[word])
     real_prob = math.exp(logprob_real) * real_class_prob
     fake_prob = math.exp(logprob_fake) * fake_class_prob
     # print real_prob, fake_prob
@@ -119,7 +142,7 @@ def tune_model(real_training, fake_training, real_validation, fake_validation):
     performance_report = {}
     m = 1
     while m <= 20:
-        p = 1.0
+        p = 0.1
         while p <= 1:
             model = train_model(real_training, fake_training, m, p)
             performance = get_performance(model, real_validation, fake_validation)
@@ -189,6 +212,24 @@ def get_total_performance(model, real_training, fake_training, real_test, fake_t
     performance_validation_total = (accurate_count_real_validation + accurate_count_fake_validation) / (float(total_real_training) + float(total_fake_training))
 
     return performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total
+
+############################# Part 3 ####################################
+
+def get_top_bottom_word_occurrences(model, stop_words=list()):
+    keys_real = {k: model.probs_real[k] for k in model.probs_real if k not in stop_words}
+
+    keys_fake = {k: model.probs_fake[k] for k in model.probs_fake if k not in stop_words}
+
+    sorted_keys_real = sorted(keys_real, key=keys_real.__getitem__, reverse=True)
+    sorted_keys_fake = sorted(keys_fake, key=keys_fake.__getitem__, reverse=True)
+
+    real_top_10 = sorted_keys_real[:10]
+    real_bottom_10 = sorted_keys_real[-10:]
+
+    fake_top_10 = sorted_keys_fake[:10]
+    fake_bottom_10 = sorted_keys_fake[-10:]
+
+    return real_top_10, real_bottom_10, fake_top_10, fake_bottom_10
 
 ############################# Logistic Regression #############################
 def process_headlines(real_training, fake_training):
@@ -362,39 +403,6 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
         'test': [],
     }
 
-    # for t in range(iter_limit):
-    #     if t % 100 == 0:
-    #         print "epoch", t
-    #     processed = 0
-    #     while processed < len(batches):
-    #         ################################################################################
-    #         # Subsample the training set for faster training
-    #         end = processed + batch_size if len(batches) - processed > batch_size else len(batches)
-    #         # print "Processing [{}:{}] up to {}".format(processed, end, len(batches))
-    #         train_idx = batches[processed: end]
-    #         x = Variable(torch.from_numpy(train_x[train_idx]), requires_grad=False).type(dtype_float)
-    #         print "train_idx is: ", train_idx
-    #         y_classes = Variable(torch.from_numpy(train_y[train_idx]), requires_grad=False).type(
-    #             dtype_long)
-    #         #################################################################################
-    #         optimizer.zero_grad()  # Zero out the previous gradient computation
-    #         y_pred = model(x)
-    #         print "y_pred", y_pred
-    #         print "y_classes", y_classes
-    #         loss = loss_fn(y_pred, y_classes)
-    #         loss.backward()  # Compute the gradient
-    #         optimizer.step()  # Use the gradient information to
-    #         # make a step
-    #         processed += batch_size
-    #
-    #     y_pred_train = model(train_x_var).data.numpy()
-    #     y_pred_valid = model(valid_x_var).data.numpy()
-    #     y_pred_test = model(test_x_var).data.numpy()
-    #
-    #     intermediate_perf['train'].append(np.mean(y_pred_train == train_y))
-    #     intermediate_perf['valid'].append(np.mean(y_pred_valid == valid_y))
-    #     intermediate_perf['test'].append(np.mean(y_pred_test == test_y))
-
     for epoch in range(num_epochs):
         idx = 0
 
@@ -414,10 +422,8 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
         loss.backward()
         optimizer.step()
 
-        if (i+1) % 100 == 0:
-            print ('Epoch: [%d/%d], Loss: %.4f'
-                   % (epoch+1, num_epochs, loss.data[0]))
-        idx += 1
+        print ('Epoch: [%d/%d], Loss: %.4f'
+               % (epoch+1, num_epochs, loss.data[0]))
 
     # Make predictions using set
     x = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
@@ -433,36 +439,44 @@ if __name__ == '__main__':
     real_training, real_validation, real_test = load_headlines(real_filename)
     fake_training, fake_validation, fake_test = load_headlines(fake_filename)
 
-    # # These parameters need lots of tweaking
-    # m = 1.0
-    # p = 1.0
-    #
-    # model = train_model(real_training, fake_training, m, p)
-    #
+    # These parameters need lots of tweaking
+    m = 1.0
+    p = 1.0
+
+    model = train_model(real_training, fake_training, m, p)
+
     # performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total = get_total_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation)
-    #
-    #
+
+    # process_headlines(real_training, fake_training)
+    # batch_xs, batch_y_s = get_train(real_training, fake_training)
+
     # print "batch_xs", batch_xs
     # print "batch_y_s", batch_y_s
-    #
-    # m = 100.0
-    # p = 1.0
-    #
-    # model = train_model(real_training, fake_training, m, p)
-    # print get_performance(model, real_validation, fake_validation)
 
-    ############### Part 4 ###################
+    m = 93
+    p = 0.4
 
-    # unique_words_dict = process_headlines(real_training, fake_training)
-    # with open('dictionary_part4.json', 'w') as fp:
-    #     json.dump(unique_words_dict, fp)
+    model = train_model(real_training, fake_training, m, p)
+    print get_performance(model, real_validation, fake_validation)
 
-    with open('dictionary_part4.json', 'r') as fp:
-        unique_words_dict = json.load(fp)
 
-    model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
 
-    #print tune_model(real_training, fake_training, real_validation, fake_validation)
+    # print tune_model(real_training, fake_training, real_validation, fake_validation)
+
+    topbottom = get_top_bottom_word_occurrences(model)
+    topbottom_stop = get_top_bottom_word_occurrences(model, ENGLISH_STOP_WORDS)
+
+    for items in topbottom:
+        print "\\begin{enumerate}"
+        for i in items:
+            print "\t\\item {}".format(i)
+        print "\\end{enumerate}"
+
+    for items in topbottom_stop:
+        print "\\begin{enumerate}"
+        for i in items:
+            print "\t\\item {}".format(i)
+        print "\\end{enumerate}"
 
     # high_fake = [a for a in fake_counts if a in real_counts and fake_counts[a] > 3 and fake_counts[a] > real_counts[a]]
 
@@ -473,3 +487,10 @@ if __name__ == '__main__':
 
     # with open('fake_word_counts.json', 'w') as fake_word_counts:
     #     json.dump(fake_counts, fake_word_counts)
+
+    ############################ Part 4 ################################
+
+    with open('dictionary_part4.json', 'r') as fp:
+        unique_words_dict = json.load(fp)
+
+    model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)

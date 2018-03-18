@@ -10,7 +10,7 @@
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \lhead{\today}
-\chead{Project 2}
+\chead{Project 3}
 \rhead{Tan, Zhou}
 %\usepackage[margin=1in]{geometry}
 \usepackage{color} %red, green, blue, yellow, cyan, magenta, black, white
@@ -57,7 +57,36 @@
 		Some useful keywords could be ``racist'' (5 occurrences in fake, 2 occurrences in real), ``hillary,'' (18 occurrences in real, 97 occurrences in fake), and ``rigged'' (3 occurrences in real, 15 occurrences in fake).
 
 		\item %2
-		\textbf{The following code snippet shows our implementation of the naive bayes algorithm}
+		The Naive Bayes algorithm was computed by computing the conditional probability 
+		\[
+			P(x_i | c) =  \frac{count(x_i = 1, c)}{count(c)}
+		\]
+		for all $x_i$ in the training set, and for each class $c$ (i.e. ``real'' or ``fake'').
+		The actual formula used involves using $m$ and $\hat{p}$ as priors in order to improve the accuracy of our model, since many words only occur once, or a few times.
+		Thus, the formula we trained with was
+		\[
+			P(x_i | c) =  \frac{count(x_i = 1, c) + m\hat{p}}{count(c) + m}
+		\]
+		
+		To predict whether a headline was real or fake, we computed the conditional probability
+		\[P(x_1, ..., x_n | c) P(c)\]
+		by computing 
+		\[\prod_{i = 1}^{n}p(x_i|y=c)\]
+		However, since for the less frequent words, $p(x_i|y=c)$ is very small, and multiplying them together may result in underflow, we computed the exponential of the sum of the log probabilities instead.
+		Thus, our formula becomes 
+		\[
+			P(x_1, ..., x_n | c) P(c) = \exp\left(\sum_{i = 1}^{n}\log(P(x_i|y=c))\right)P(c)
+		\]
+		We then return the class with the highest probability as our prediction.
+		
+		In order to tune the $m$ and $\hat{p}$ parameters, we trained the model with varying values, with $m \in [1, 20]$ and $p\in [0.1, 1.0]$, with a step of 1 and 0.1, respectively, and found the values that performed best on the validation set.
+		
+		The performance of the classifier on the training set is 96\%, and the performance on the test set is 85\%
+		
+		The best params are as follows: \\
+		\[m = 2, \hat{p} = 0.2\]
+		\\
+		The code is included below:
 		\begin{lstlisting}
 def train_model(real_headlines, fake_headlines, m, p):
     word_list = get_wordlist(real_headlines, fake_headlines)
@@ -69,12 +98,12 @@ def train_model(real_headlines, fake_headlines, m, p):
         # if word in ENGLISH_STOP_WORDS: continue
         if word in real_counts:
             probabilities_real[word] = (real_counts[word] + m * p) / float(len(real_headlines) + m)
-            if probabilities_real[word] > 1:
-                raise ValueError
+        else:
+            probabilities_real[word] = (0 + m * p) / float(len(real_headlines) + m)
         if word in fake_counts:
             probabilities_fake[word] = (fake_counts[word] + m * p) / float(len(fake_headlines) + m)
-            if probabilities_fake[word] > 1:
-                raise ValueError
+        else:
+            probabilities_fake[word] = (0 + m * p) / float(len(fake_headlines) + m)
 
     return probabilities_real, probabilities_fake, m, p, len(real_headlines), len(fake_headlines), word_list
 
@@ -86,27 +115,182 @@ def predict_model(model, headline):
     fake_class_prob = float(fake_count) / (real_count + fake_count)
     headline_split = headline.split(' ')
     for word in word_list:
-        if word in headline_split:
-            if word in probabilities_real:
-                logprob_real += math.log(probabilities_real[word])
-            if word in probabilities_fake:
-                logprob_fake += math.log(probabilities_fake[word])
-        else:
-            if word in probabilities_real:
-                logprob_real += math.log(1 - probabilities_real[word])
-            if word in probabilities_fake:
-                logprob_fake += math.log(1 - probabilities_fake[word])
         # if word in ENGLISH_STOP_WORDS: continue
+        if word in headline_split:
+            logprob_real += math.log(probabilities_real[word])
+            logprob_fake += math.log(probabilities_fake[word])
+        else:
+            logprob_real += math.log(1 - probabilities_real[word])
+            logprob_fake += math.log(1 - probabilities_fake[word])
     real_prob = math.exp(logprob_real) * real_class_prob
     fake_prob = math.exp(logprob_fake) * fake_class_prob
     # print real_prob, fake_prob
     return real_prob > fake_prob
+
+def tune_model(real_training, fake_training, real_validation, fake_validation):
+    performance_report = {}
+    m = 1
+    while m <= 20:
+        p = 0.1
+        while p <= 1:
+            model = train_model(real_training, fake_training, m, p)
+            performance = get_performance(model, real_validation, fake_validation)
+            print m, p, performance
+            performance_report[(m, p)] = performance
+            p += 0.1
+        m += 1
+
+    print "The m and p value is", max(performance_report, key=performance_report.get)
+
+    return performance_report
+
+def get_performance(model, real, fake):
+    correct = 0
+
+    for hl in real:
+        if predict_model(model, hl):
+            correct += 1
+
+    for hl in fake:
+        if not predict_model(model, hl):
+            correct += 1
+
+    return float(correct) / (len(real) + len(fake))
 		\end{lstlisting}
 		\item %3
 		\begin{enumerate}
 			\item %3a
+			The 10 words whose presence most strongly predicts that the news is real
+			\begin{enumerate}
+				\item trump
+				\item donald
+				\item to
+				\item trumps
+				\item in
+				\item us
+				\item on
+				\item of
+				\item for
+				\item says
+			\end{enumerate}
+		
+			The 10 words whose absence most strongly predicts that the news is real
+			\begin{enumerate}
+				\item christians
+				\item appoint
+				\item nevertrump
+				\item boycottcomedian
+				\item pandering
+				\item weld
+				\item uneducated
+				\item honchos
+				\item rep
+				\item 8th
+			\end{enumerate}
+		
+			The 10 words whose presence most strongly predicts that the news is fake
+			\begin{enumerate}
+				\item trump
+				\item to
+				\item the
+				\item donald
+				\item in
+				\item for
+				\item of
+				\item a
+				\item and
+				\item is
+			\end{enumerate}
+		
+			The 10 words whose absence most strongly predicts that the news is fake
+			\begin{enumerate}
+				\item repeal
+				\item friends
+				\item union
+				\item exposure
+				\item resolution
+				\item khanfar
+				\item rule
+				\item jab
+				\item rural
+				\item expands
+			\end{enumerate}
+		
+			These lists were obtained by finding the words with the highest and lowest conditional probability $P(x|c)$.
+			If the conditional probability is high, then if the word is present in the headline, it will not decrease the term $P(x_1, ..., x_n | c)$ as much (since the probability is closer to 1), which means that the final conditional probability will be higher.
+			If the conditional probability is low, then if the word is \textit{absent} from the headline, it will also result in a lower penalty than if the probability were higher.
+			That's because $1 - P(x_i|c)$ is used instead.
+			
+			However, due to the addition of the $m$ and $\hat{p}$ values to the equation for $p(x_i|c)$, the bounds on the probability is not 1.0 and 0.0.
+			In the case of our optimal values ($m = 2, \hat{p} = 0.2$), the min and max values are  0.00392 and 0.984, respectively.
+			Since \(1 - 0.00392 > 0.984\), having a missing word absent is stronger than having a common word present.
 			\item %3b
+			The following lists have had the stopwords from scikit\_learn excluded
+			
+			The 10 words whose presence most strongly predicts that the news is real
+			\begin{enumerate}
+				\item trump
+				\item donald
+				\item trumps
+				\item says
+				\item election
+				\item clinton
+				\item ban
+				\item north
+				\item korea
+				\item president
+			\end{enumerate}
+		
+			The 10 words whose absence most strongly predicts that the news is real
+			\begin{enumerate}
+				\item backfires
+				\item christians
+				\item honchos
+				\item nevertrump
+				\item boycottcomedian
+				\item pierson
+				\item uneducated
+				\item banishment
+				\item rep
+				\item tanking
+			\end{enumerate}
+		
+			The 10 words whose presence most strongly predicts that the news is fake
+			\begin{enumerate}
+				\item trump
+				\item donald
+				\item hillary
+				\item clinton
+				\item just
+				\item election
+				\item president
+				\item obama
+				\item new
+				\item says
+			\end{enumerate}
+		
+			The 10 words whose absence most strongly predicts that the news is fake
+			\begin{enumerate}
+				\item friends
+				\item union
+				\item inspiration
+				\item searches
+				\item stunt
+				\item resolution
+				\item khanfar
+				\item rule
+				\item jab
+				\item expands
+			\end{enumerate}
 			\item %3c
+			It might make sense to remove stopwords when looking at the ratio of word frequency between the real and fake headlines, because these words are common, and would likely appear in most if not all headlines.
+			These words are also uninteresting on their own, and so they crowd up the word frequency rankings, possibly pushing more interesting words down the list.
+			Another reason for removing stopwords would be when the input set includes headlines of different languages.
+			This is because stopwords in one language are usually uncommon in other languages, and once again skew the results.
+			
+			It would make sense to keep stopwords because their presence could still help distinguish between classes, because one class might use certain stopwords in a different way, or use them more (or less) frequently than the other class.
+			Furthermore, in testing, we have found that training while excluding stopwords does not necessarily increase the performance of our model.
+			
 		\end{enumerate}
 	\item %4
 	\item %5
