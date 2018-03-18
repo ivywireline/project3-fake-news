@@ -162,125 +162,146 @@ def get_performance(model, real, fake):
 			\item %3a
 			The 10 words whose presence most strongly predicts that the news is real
 			\begin{enumerate}
-				\item trump
-				\item donald
-				\item to
-				\item trumps
-				\item in
-				\item us
-				\item on
-				\item of
-				\item for
-				\item says
+				\item japan
+				\item daniel
+				\item refugee
+				\item denies
+				\item zoe
+				\item charlottesville
+				\item korea
+				\item business
+				\item nfl
+				\item south
 			\end{enumerate}
-		
+			
 			The 10 words whose absence most strongly predicts that the news is real
 			\begin{enumerate}
-				\item christians
-				\item appoint
-				\item nevertrump
-				\item boycottcomedian
-				\item pandering
-				\item weld
-				\item uneducated
-				\item honchos
-				\item rep
-				\item 8th
+				\item trump
+				\item the
+				\item to
+				\item hillary
+				\item a
+				\item is
+				\item and
+				\item for
+				\item clinton
+				\item in
 			\end{enumerate}
-		
+			
 			The 10 words whose presence most strongly predicts that the news is fake
 			\begin{enumerate}
-				\item trump
-				\item to
-				\item the
-				\item donald
-				\item in
-				\item for
-				\item of
-				\item a
-				\item and
-				\item is
+				\item hats
+				\item debunks
+				\item sleep
+				\item hating
+				\item battleground
+				\item haters
+				\item pointing
+				\item dazu
+				\item pantano
+				\item amtsantritt
 			\end{enumerate}
-		
+			
 			The 10 words whose absence most strongly predicts that the news is fake
 			\begin{enumerate}
-				\item repeal
-				\item friends
-				\item union
-				\item exposure
-				\item resolution
-				\item khanfar
-				\item rule
-				\item jab
-				\item rural
-				\item expands
+				\item donald
+				\item trumps
+				\item us
+				\item says
+				\item ban
+				\item korea
+				\item north
+				\item turnbull
+				\item travel
+				\item australia
 			\end{enumerate}
 		
-			These lists were obtained by finding the words with the highest and lowest conditional probability $P(x|c)$.
-			If the conditional probability is high, then if the word is present in the headline, it will not decrease the term $P(x_1, ..., x_n | c)$ as much (since the probability is closer to 1), which means that the final conditional probability will be higher.
-			If the conditional probability is low, then if the word is \textit{absent} from the headline, it will also result in a lower penalty than if the probability were higher.
-			That's because $1 - P(x_i|c)$ is used instead.
+			These lists were obtained by finding the words with the max values for the conditional probabilities
+			\[
+				P(\text{class} | \text{word}) = \frac{P(\text{word} | \text{class})P(\text{class})}{P(\text{word})}
+			\]
+			where
+			\[
+				P(\text{word}) = \frac{\text{count}(\text{word}) + m\hat{p}}{\text{\text{count}}(\text{headlines}) + m}
+			\]
+			and
+			\[
+			P(\text{class} | \neg\text{word}) = \frac{P(\neg\text{word} | \text{class})P(\text{class})}{P(\neg\text{word})}
+			\]
+			\[
+			= \frac{(1 - P(\text{word} | \text{class}))P(\text{class})}{1 - P(\text{word})}
+			\]
+			The words that have the biggest sway on whether a headline is real or fake tend to be words that only appear in one set and not the other.
+			However, the presence of a word in one class's top 10 doesn't imply that it will be as strong when absent from the other class.
 			
-			However, due to the addition of the $m$ and $\hat{p}$ values to the equation for $p(x_i|c)$, the bounds on the probability is not 1.0 and 0.0.
-			In the case of our optimal values ($m = 2, \hat{p} = 0.2$), the min and max values are  0.00392 and 0.984, respectively.
-			Since \(1 - 0.00392 > 0.984\), having a missing word absent is stronger than having a common word present.
+			
+			%(model.probs_real[k] * prob_real) / (model.real_word_counts[k] + model.m / float(model.real_word_counts[k] + model.fake_word_counts[k]))
+			%If the conditional probability is high, then if the word is present in the headline, it will not decrease the term $P(x_1, ..., x_n | c)$ as much (since the probability is closer to 1), which means that the final conditional probability will be higher.
+			%If the conditional probability is low, then if the word is \textit{absent} from the headline, it will also result in a lower penalty than if the probability were higher.
+			%That's because $1 - P(x_i|c)$ is used instead.
+			For the code, please see \verb|get_top_bottom_word_occurrences| in fake.py.
+			
+			%However, due to the addition of the $m$ and $\hat{p}$ values to the equation for $p(x_i|c)$, the bounds on the probability is not 1.0 and 0.0.
+			%In the case of our optimal values ($m = 2, \hat{p} = 0.2$), the min and max values are  0.00392 and 0.984, respectively.
+			%Since \(1 - 0.00392 > 0.984\), having a missing word absent is stronger than having a common word present.
+			
 			\item %3b
 			The following lists have had the stopwords from scikit\_learn excluded
 			
 			The 10 words whose presence most strongly predicts that the news is real
 			\begin{enumerate}
-				\item trump
-				\item donald
-				\item trumps
-				\item says
-				\item election
-				\item clinton
-				\item ban
-				\item north
+				\item japan
+				\item daniel
+				\item refugee
+				\item denies
+				\item zoe
+				\item charlottesville
 				\item korea
-				\item president
+				\item business
+				\item nfl
+				\item south
 			\end{enumerate}
-		
+			
 			The 10 words whose absence most strongly predicts that the news is real
 			\begin{enumerate}
-				\item backfires
-				\item christians
-				\item honchos
-				\item nevertrump
-				\item boycottcomedian
-				\item pierson
-				\item uneducated
-				\item banishment
-				\item rep
-				\item tanking
-			\end{enumerate}
-		
-			The 10 words whose presence most strongly predicts that the news is fake
-			\begin{enumerate}
 				\item trump
-				\item donald
 				\item hillary
 				\item clinton
 				\item just
-				\item election
-				\item president
-				\item obama
-				\item new
-				\item says
+				\item america
+				\item supporters
+				\item vote
+				\item black
+				\item win
+				\item watch
 			\end{enumerate}
-		
+			
+			The 10 words whose presence most strongly predicts that the news is fake
+			\begin{enumerate}
+				\item hats
+				\item debunks
+				\item sleep
+				\item hating
+				\item battleground
+				\item haters
+				\item pointing
+				\item dazu
+				\item pantano
+				\item amtsantritt
+			\end{enumerate}
+			
 			The 10 words whose absence most strongly predicts that the news is fake
 			\begin{enumerate}
-				\item friends
-				\item union
-				\item inspiration
-				\item searches
-				\item stunt
-				\item resolution
-				\item khanfar
-				\item rule
-				\item jab
-				\item expands
+				\item donald
+				\item trumps
+				\item says
+				\item ban
+				\item korea
+				\item north
+				\item turnbull
+				\item travel
+				\item australia
+				\item climate
 			\end{enumerate}
 			\item %3c
 			It might make sense to remove stopwords when looking at the ratio of word frequency between the real and fake headlines, because these words are common, and would likely appear in most if not all headlines.

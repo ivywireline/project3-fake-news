@@ -30,9 +30,12 @@ class NaiveBayesModel:
         self.num_real = kwargs.pop('num_real_headlines', 0)
         self.num_fake = kwargs.pop('num_fake_headlines', 0)
         self.word_list = kwargs.pop('word_list', list())
+        self.real_word_counts = kwargs.pop('real_word_counts', dict())
+        self.fake_word_counts = kwargs.pop('fake_word_counts', dict())
 
         if kwargs:
             raise TypeError('Unexpected **kwargs: %r' % kwargs)
+
 
 def get_wordlist(*args):
     """
@@ -99,6 +102,7 @@ def train_model(real_headlines, fake_headlines, m, p):
             probabilities_real[word] = (real_counts[word] + m * p) / float(len(real_headlines) + m)
         else:
             probabilities_real[word] = (0 + m * p) / float(len(real_headlines) + m)
+
         if word in fake_counts:
             probabilities_fake[word] = (fake_counts[word] + m * p) / float(len(fake_headlines) + m)
         else:
@@ -112,6 +116,8 @@ def train_model(real_headlines, fake_headlines, m, p):
         num_real_headlines=len(real_headlines),
         num_fake_headlines=len(fake_headlines),
         word_list=word_list,
+        real_word_counts = real_counts,
+        fake_word_counts = fake_counts,
     )
 
 def predict_model(model, headline):
@@ -217,20 +223,42 @@ def get_total_performance(model, real_training, fake_training, real_test, fake_t
 ############################# Part 3 ####################################
 
 def get_top_bottom_word_occurrences(model, stop_words=list()):
-    keys_real = {k: model.probs_real[k] for k in model.probs_real if k not in stop_words}
+    prob_real = float(model.num_real) / (model.num_real + model.num_fake)
+    prob_fake = float(model.num_fake) / (model.num_real + model.num_fake)
 
-    keys_fake = {k: model.probs_fake[k] for k in model.probs_fake if k not in stop_words}
+    keys_real = {
+        k: (model.probs_real[k] * prob_real) / (float(model.real_word_counts[k] + model.fake_word_counts[k] + model.m * model.p) / (model.num_real + model.num_fake + model.m))
+        for k in model.probs_real if k not in stop_words
+    }
+
+    keys_fake = {
+        k: (model.probs_fake[k] * prob_fake) / (float(model.real_word_counts[k] + model.fake_word_counts[k] + model.m * model.p) / (model.num_real + model.num_fake + model.m))
+        for k in model.probs_fake if k not in stop_words
+    }
+
+    keys_real_not = {
+        k: ((1 - model.probs_real[k]) * prob_real) / (1 - float(model.real_word_counts[k] + model.fake_word_counts[k] + model.m * model.p) / (model.num_real + model.num_fake + model.m))
+        for k in model.probs_real if k not in stop_words
+    }
+    keys_fake_not = {
+        k: ((1 - model.probs_fake[k]) * prob_fake) / (1 - float(model.real_word_counts[k] + model.fake_word_counts[k] + model.m * model.p) / (model.num_real + model.num_fake + model.m))
+        for k in model.probs_fake if k not in stop_words
+    }
 
     sorted_keys_real = sorted(keys_real, key=keys_real.__getitem__, reverse=True)
     sorted_keys_fake = sorted(keys_fake, key=keys_fake.__getitem__, reverse=True)
 
+    sorted_keys_real_not = sorted(keys_real_not, key=keys_real_not.__getitem__, reverse=True)
+    sorted_keys_fake_not = sorted(keys_fake_not, key=keys_fake_not.__getitem__, reverse=True)
+
     real_top_10 = sorted_keys_real[:10]
-    real_bottom_10 = sorted_keys_real[-10:]
+    real_bottom_10 = sorted_keys_real_not[:10]
 
     fake_top_10 = sorted_keys_fake[:10]
-    fake_bottom_10 = sorted_keys_fake[-10:]
+    fake_bottom_10 = sorted_keys_fake_not[:10]
 
     return real_top_10, real_bottom_10, fake_top_10, fake_bottom_10
+
 
 ############################# Logistic Regression #############################
 def process_headlines(real_training, fake_training):
@@ -457,30 +485,30 @@ if __name__ == '__main__':
     # # print "batch_xs", batch_xs
     # # print "batch_y_s", batch_y_s
     #
-    # m = 93
-    # p = 0.4
-    #
-    # model = train_model(real_training, fake_training, m, p)
-    # print get_performance(model, real_validation, fake_validation)
+    m = 2
+    p = 0.2
+
+    model = train_model(real_training, fake_training, m, p)
+    print get_performance(model, real_validation, fake_validation)
     #
     #
     #
     # # print tune_model(real_training, fake_training, real_validation, fake_validation)
     #
-    # topbottom = get_top_bottom_word_occurrences(model)
-    # topbottom_stop = get_top_bottom_word_occurrences(model, ENGLISH_STOP_WORDS)
-    #
-    # for items in topbottom:
-    #     print "\\begin{enumerate}"
-    #     for i in items:
-    #         print "\t\\item {}".format(i)
-    #     print "\\end{enumerate}"
-    #
-    # for items in topbottom_stop:
-    #     print "\\begin{enumerate}"
-    #     for i in items:
-    #         print "\t\\item {}".format(i)
-    #     print "\\end{enumerate}"
+    topbottom = get_top_bottom_word_occurrences(model)
+    topbottom_stop = get_top_bottom_word_occurrences(model, ENGLISH_STOP_WORDS)
+
+    for items in topbottom:
+        print "\\begin{enumerate}"
+        for i in items:
+            print "\t\\item {}".format(i)
+        print "\\end{enumerate}"
+
+    for items in topbottom_stop:
+        print "\\begin{enumerate}"
+        for i in items:
+            print "\t\\item {}".format(i)
+        print "\\end{enumerate}"
 
     # high_fake = [a for a in fake_counts if a in real_counts and fake_counts[a] > 3 and fake_counts[a] > real_counts[a]]
 
@@ -496,6 +524,6 @@ if __name__ == '__main__':
 
     # dictionary_unique_words = process_headlines(real_training, fake_training)
     # pickle.dump(dictionary_unique_words, open("Part4Dictionary.pkl", 'wb'))
-    unique_words_dict = pickle.load(open("Part4Dictionary.pkl"))
-
-    model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+    # unique_words_dict = pickle.load(open("Part4Dictionary.pkl"))
+    #
+    # model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
