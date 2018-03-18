@@ -362,6 +362,22 @@ class LogisticRegression(nn.Module):
         return out
 
 
+class StableBCELoss(nn.modules.Module):
+       def __init__(self):
+             super(StableBCELoss, self).__init__()
+       def forward(self, input, target):
+             neg_abs = - input.abs()
+             loss = input.clamp(min=0) - input * target + (1 + neg_abs.exp()).log()
+             return loss.mean()
+
+def transform_elements(lst):
+    for i in range(len(lst)):
+        if lst[i] <= 0.5:
+            lst[i] = 0
+        else:
+            lst[i] = 1
+
+
 def part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict):
     # 1 means real. 0 means fake.
     unique_words_set = get_wordlist(real_training, fake_training)
@@ -377,24 +393,24 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     dtype_float = torch.FloatTensor
     dtype_long = torch.LongTensor
 
-    train_x_var = Variable(torch.from_numpy(train_x), requires_grad=False).type(dtype_float)
-    valid_x_var = Variable(torch.from_numpy(valid_x), requires_grad=False).type(dtype_float)
-    test_x_var = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
-
     # Hyper Parameters
     input_size = unique_words_number
     num_classes = 1
-    num_epochs = 3
+    num_epochs = 300
     batch_size = 32
     learning_rate = 0.0001
     iter_limit = 3000
 
-    model = LogisticRegression(input_size, num_classes)
+    # model = LogisticRegression(input_size, num_classes)
+    model = torch.nn.Sequential()
+    model.add_module("linear",
+                     torch.nn.Linear(input_size, num_classes, bias=False))
 
     # Loss and Optimizer
     # Softmax is internally computed.
     # Set parameters to be updated.
-    loss_fn = nn.BCELoss()
+    # loss_fn = nn.BCELoss()
+    loss_fn = StableBCELoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
     batches = np.random.permutation(range(train_x.shape[0]))
@@ -406,18 +422,15 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     }
 
     for epoch in range(num_epochs):
-        idx = 0
-
-        headline_tensor = torch.from_numpy(train_x).double()
-        headline_var = Variable(headline_tensor, requires_grad=False).type(dtype_float)
+        headline_tensor = torch.from_numpy(train_x)
+        headline_var = Variable(nn.Sigmoid()(headline_tensor), requires_grad=False).type(dtype_float)
         # labels_var = Variable(labels)
-        label_tensor = torch.from_numpy(train_y).double()
+        label_tensor = torch.from_numpy(train_y)
         label_var = Variable(label_tensor, requires_grad=False).type(dtype_float)
 
         # Forward + Backward + Optimize
-        # optimizer.zero_grad()
-        output = model(headline_var)
-
+        optimizer.zero_grad()
+        output = model.forward(headline_var)
         loss = loss_fn(output, label_var)
         loss.backward()
         optimizer.step()
@@ -426,10 +439,11 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
                % (epoch+1, num_epochs, loss.data[0]))
 
     # Make predictions using set
-    x = Variable(torch.from_numpy(test_x).double(), requires_grad=False).type(dtype_float)
-    y_pred = model(x).data.numpy().argmax(axis=1)
-
-    print "y_pred is ", y_pred
+    x = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
+    y_pred = model.forward(x).data.numpy().flatten()
+    print "y_pred before transform is", y_pred
+    transform_elements(y_pred)
+    print "y_pred after transform is ", y_pred
 
     print "test_y is ", test_y
 
