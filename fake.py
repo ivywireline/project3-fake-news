@@ -383,7 +383,7 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
 
     # Hyper Parameters
     input_size = unique_words_number
-    num_classes = 2
+    num_classes = 1
     num_epochs = 3
     batch_size = 32
     learning_rate = 0.0001
@@ -412,13 +412,13 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
         headline_var = Variable(headline_tensor, requires_grad=False).type(dtype_float)
         # labels_var = Variable(labels)
         label_tensor = torch.from_numpy(train_y).double()
-        label_var = Variable(label_tensor, requires_grad=False).type(dtype_long)
+        label_var = Variable(label_tensor, requires_grad=False).type(dtype_float)
 
         # Forward + Backward + Optimize
         # optimizer.zero_grad()
         output = model(headline_var)
 
-        loss = loss_fn(output.double(), label_var)
+        loss = loss_fn(output, label_var)
         loss.backward()
         optimizer.step()
 
