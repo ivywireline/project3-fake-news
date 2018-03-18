@@ -20,6 +20,19 @@ fake_filename = 'clean_fake.txt'
 unique_words_dict = {}
 
 
+class NaiveBayesModel:
+    def __init__(self, **kwargs):
+        self.probs_real = kwargs.pop('probs_real', None)
+        self.probs_fake = kwargs.pop('probs_fake', None)
+        self.m = kwargs.pop('m', 1)
+        self.p = kwargs.pop('p', 0.1)
+        self.num_real = kwargs.pop('num_real_headlines', 0)
+        self.num_fake = kwargs.pop('num_fake_headlines', 0)
+        self.word_list = kwargs.pop('word_list', list())
+
+        if kwargs:
+            raise TypeError('Unexpected **kwargs: %r' % kwargs)
+
 def get_wordlist(*args):
     """
     Returns a list containing all of the unique words in all lists of
@@ -72,6 +85,7 @@ def count_word_occurrance(headlines):
 
     return word_counts
 
+#################### Begin Part 2 ############################
 def train_model(real_headlines, fake_headlines, m, p):
     word_list = get_wordlist(real_headlines, fake_headlines)
     real_counts = count_word_occurrance(real_headlines)
@@ -89,10 +103,23 @@ def train_model(real_headlines, fake_headlines, m, p):
         else:
             probabilities_fake[word] = (0 + m * p) / float(len(fake_headlines) + m)
 
-    return probabilities_real, probabilities_fake, m, p, len(real_headlines), len(fake_headlines), word_list
+    return NaiveBayesModel(
+        probs_real=probabilities_real,
+        probs_fake=probabilities_fake,
+        m=m,
+        p=p,
+        num_real_headlines=len(real_headlines),
+        num_fake_headlines=len(fake_headlines),
+        word_list=word_list,
+    )
 
 def predict_model(model, headline):
-    probabilities_real, probabilities_fake, m, p, real_count, fake_count, word_list = model
+    probabilities_real = model.probs_real
+    probabilities_fake = model.probs_fake
+    real_count = model.num_real
+    fake_count = model.num_fake
+    word_list = model.word_list
+
     logprob_real = 0.0
     logprob_fake = 0.0
     real_class_prob = float(real_count) / (real_count + fake_count)
@@ -185,6 +212,24 @@ def get_total_performance(model, real_training, fake_training, real_test, fake_t
     performance_validation_total = (accurate_count_real_validation + accurate_count_fake_validation) / (float(total_real_training) + float(total_fake_training))
 
     return performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total
+
+############################# Part 3 ####################################
+
+def get_top_bottom_word_occurrences(model, stop_words=list()):
+    keys_real = {k: model.probs_real[k] for k in model.probs_real if k not in stop_words}
+
+    keys_fake = {k: model.probs_real[k] for k in model.probs_fake if k not in stop_words}
+
+    sorted_keys_real = sorted(keys_real, key=keys_real.__getitem__, reverse=True)
+    sorted_keys_fake = sorted(keys_fake, key=keys_real.__getitem__, reverse=True)
+
+    real_top_10 = sorted_keys_real[:10]
+    real_bottom_10 = sorted_keys_real[-10:]
+
+    fake_top_10 = sorted_keys_fake[:10]
+    fake_bottom_10 = sorted_keys_fake[-10:]
+
+    return real_top_10, real_bottom_10, fake_top_10, fake_bottom_10
 
 ############################# Logistic Regression #############################
 def process_headlines(real_training, fake_training):
@@ -312,7 +357,16 @@ if __name__ == '__main__':
 
 
 
-    print tune_model(real_training, fake_training, real_validation, fake_validation)
+    # print tune_model(real_training, fake_training, real_validation, fake_validation)
+
+    topbottom = get_top_bottom_word_occurrences(model)
+    topbottom_stop = get_top_bottom_word_occurrences(model, ENGLISH_STOP_WORDS)
+
+    for items in topbottom_stop:
+        print "\\begin{enumerate}"
+        for i in items:
+            print "\t\\item {}".format(i)
+        print "\\end{enumerate}"
 
     # high_fake = [a for a in fake_counts if a in real_counts and fake_counts[a] > 3 and fake_counts[a] > real_counts[a]]
 
