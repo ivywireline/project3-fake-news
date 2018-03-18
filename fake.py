@@ -384,9 +384,9 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     # Hyper Parameters
     input_size = unique_words_number
     num_classes = 2
-    num_epochs = 5
+    num_epochs = 3
     batch_size = 32
-    learning_rate = 0.001
+    learning_rate = 0.0001
     iter_limit = 3000
 
     model = LogisticRegression(input_size, num_classes)
@@ -394,7 +394,7 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     # Loss and Optimizer
     # Softmax is internally computed.
     # Set parameters to be updated.
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn = nn.BCELoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
     batches = np.random.permutation(range(train_x.shape[0]))
@@ -415,7 +415,7 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
         label_var = Variable(label_tensor, requires_grad=False).type(dtype_long)
 
         # Forward + Backward + Optimize
-        optimizer.zero_grad()
+        # optimizer.zero_grad()
         output = model(headline_var)
 
         loss = loss_fn(output.double(), label_var)
@@ -427,13 +427,13 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
 
     # Make predictions using set
     x = Variable(torch.from_numpy(test_x).double(), requires_grad=False).type(dtype_float)
-    y_pred = model(x).data.numpy()
+    y_pred = model(x).data.numpy().argmax(axis=1)
 
     print "y_pred is ", y_pred
 
     print "test_y is ", test_y
 
-    # print np.mean(y_pred == test_y)
+    print np.mean(y_pred == test_y)
 
     return model
 
