@@ -320,6 +320,12 @@ def transform_elements(lst):
             lst[i] = 1
 
 
+def evaluate_logreg_model(model, x, expected_y):
+    y_pred = model.forward(x).data.numpy().flatten()
+    transform_elements(y_pred)
+    return np.mean(y_pred == expected_y)
+
+
 def part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict):
     # 1 means real. 0 means fake.
     unique_words_number = len(unique_words_dict)
@@ -334,47 +340,37 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     # Hyper Parameters
     input_size = unique_words_number
     num_classes = 1
-    num_epochs = 1000
-    batch_size = 32
+    num_iters = 1000
     learning_rate = 0.0001
-    iter_limit = 3000
 
     # model = LogisticRegression(input_size, num_classes)
     model = torch.nn.Sequential(
         torch.nn.Linear(input_size, num_classes, bias=False),
         torch.nn.Sigmoid(),
     )
-    # model.add_module("linear",
-    #                  torch.nn.Linear(input_size, num_classes, bias=False),)
-    # model.add_module("Sigmoid", nn.Sigmoid())
-
     torch.nn.init.xavier_uniform(model[0].weight)
 
     # Loss and Optimizer
     # Softmax is internally computed.
     # Set parameters to be updated.
     loss_fn = torch.nn.BCELoss()
-    # loss_fn = StableBCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    # batches = np.random.permutation(range(train_x.shape[0]))
-    #
-    # intermediate_perf = {
-    #     'train': [],
-    #     'valid': [],
-    #     'test': [],
-    # }
+    x_train = Variable(torch.from_numpy(train_x), requires_grad=False).type(dtype_float)
+    y_train = Variable(torch.from_numpy(np.vstack(train_y)), requires_grad=False).type(dtype_float)
 
-    headline_tensor = torch.from_numpy(train_x)
-    x = Variable(headline_tensor).type(dtype_float)
-    # labels_var = Variable(labels)
-    label_tensor = torch.from_numpy(np.vstack(train_y))
-    y = Variable(label_tensor, requires_grad=False).type(dtype_float)
+    x_valid = Variable(torch.from_numpy(valid_x), requires_grad=False).type(dtype_float)
 
-    for epoch in range(num_epochs):
+    x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
+
+    performance_data_training = []
+    performance_data_valid = []
+    performance_data_test = []
+
+    for i in range(num_iters):
         # Forward + Backward + Optimize
-        y_pred = model(x)
-        loss = loss_fn.forward(y_pred, y)
+        y_pred = model(x_train)
+        loss = loss_fn.forward(y_pred, y_train)
 
         optimizer.zero_grad()
 
@@ -382,11 +378,15 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
         optimizer.step()
 
         print ('Epoch: [%d/%d], Loss: %.4f'
-               % (epoch+1, num_epochs, loss.data[0]))
+               % (i+1, num_iters, loss.data[0]))
+
+        # evaluate model
+        performance_data_training.append(evaluate_logreg_model(model, x_train, train_y))
+        performance_data_valid.append(evaluate_logreg_model(model, x_valid, valid_y))
+        performance_data_test.append(evaluate_logreg_model(model, x_test, test_y))
+
 
     # Make predictions using the training set
-
-    x_train = Variable(torch.from_numpy(train_x), requires_grad=False).type(dtype_float)
     y_pred_train = model.forward(x_train).data.numpy().flatten()
     print "y_pred_train before transform is", y_pred_train
     transform_elements(y_pred_train)
@@ -397,7 +397,6 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     print "Performance on Training Set", np.mean(y_pred_train == train_y)
 
     # Make predictions using test set
-    x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
     y_pred_test = model.forward(x_test).data.numpy().flatten()
     print "y_pred_test before transform is", y_pred_test
     transform_elements(y_pred_test)
@@ -407,7 +406,11 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
 
     print "Performance on Test Set", np.mean(y_pred_test == test_y)
 
-    return model
+    return model, {
+        'training': performance_data_training,
+        'validation': performance_data_valid,
+        'test': performance_data_test,
+    }
 
 
 def part7(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, max_depth):
@@ -506,7 +509,7 @@ if __name__ == '__main__':
     }
     #
     # print "Training model"
-    model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+    model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
 
 
     ############################## Part 7 ##############################
