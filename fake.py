@@ -379,25 +379,6 @@ def get_test(real_training, fake_training, real_test, fake_test, unique_words_di
     return batch_xs, batch_y_s
 
 
-# Model
-class LogisticRegression(nn.Module):
-    def __init__(self, input_size, num_classes):
-        super(LogisticRegression, self).__init__()
-        self.linear = nn.Linear(input_size, num_classes)
-
-    def forward(self, x):
-        out = self.linear(x)
-        return out
-
-
-class StableBCELoss(nn.modules.Module):
-       def __init__(self):
-             super(StableBCELoss, self).__init__()
-       def forward(self, input, target):
-             neg_abs = - input.abs()
-             loss = input.clamp(min=0) - input * target + (1 + neg_abs.exp()).log()
-             return loss.mean()
-
 def transform_elements(lst):
     for i in range(len(lst)):
         if lst[i] <= 0.5:
@@ -412,11 +393,11 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     unique_words_number = len(unique_words_set)
 
     train_x, train_y = get_train(real_training, fake_training, unique_words_dict)
-    train_y = np.array(train_y)
+    train_y = np.vstack(train_y)
     valid_x, valid_y = get_validation(real_training, fake_training, real_test, fake_test, unique_words_dict)
-    valid_y = np.array(valid_y)
+    valid_y = np.vstack(valid_y)
     test_x, test_y = get_test(real_training, fake_training, real_test, fake_test, unique_words_dict)
-    test_y = np.array(test_y)
+    test_y = np.vstack(test_y)
 
     dtype_float = torch.FloatTensor
     dtype_long = torch.LongTensor
@@ -424,7 +405,7 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     # Hyper Parameters
     input_size = unique_words_number
     num_classes = 1
-    num_epochs = 300
+    num_epochs = 1000
     batch_size = 32
     learning_rate = 0.0001
     iter_limit = 3000
@@ -433,13 +414,16 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     model = torch.nn.Sequential()
     model.add_module("linear",
                      torch.nn.Linear(input_size, num_classes, bias=False))
+    model.add_module("Sigmoid", nn.Sigmoid())
+
+    torch.nn.init.xavier_uniform(model[0].weight)
 
     # Loss and Optimizer
     # Softmax is internally computed.
     # Set parameters to be updated.
-    # loss_fn = nn.BCELoss()
-    loss_fn = StableBCELoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+    loss_fn = nn.BCELoss()
+    # loss_fn = StableBCELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     batches = np.random.permutation(range(train_x.shape[0]))
 
@@ -449,33 +433,45 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
         'test': [],
     }
 
-    for epoch in range(num_epochs):
-        headline_tensor = torch.from_numpy(train_x)
-        headline_var = Variable(nn.Sigmoid()(headline_tensor), requires_grad=False).type(dtype_float)
-        # labels_var = Variable(labels)
-        label_tensor = torch.from_numpy(train_y)
-        label_var = Variable(label_tensor, requires_grad=False).type(dtype_float)
+    headline_tensor = torch.from_numpy(train_x)
+    headline_var = Variable(headline_tensor, requires_grad=False).type(dtype_float)
+    # labels_var = Variable(labels)
+    label_tensor = torch.from_numpy(train_y)
+    label_var = Variable(label_tensor, requires_grad=False).type(dtype_float)
 
+    for epoch in range(num_epochs):
         # Forward + Backward + Optimize
-        optimizer.zero_grad()
         output = model.forward(headline_var)
-        loss = loss_fn(output, label_var)
+        loss = loss_fn.forward(output, label_var)
+        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
         print ('Epoch: [%d/%d], Loss: %.4f'
                % (epoch+1, num_epochs, loss.data[0]))
 
-    # Make predictions using set
-    x = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
-    y_pred = model.forward(x).data.numpy().flatten()
-    print "y_pred before transform is", y_pred
-    transform_elements(y_pred)
-    print "y_pred after transform is ", y_pred
+    # Make predictions using the training set
+
+    x_train = Variable(torch.from_numpy(train_x), requires_grad=False).type(dtype_float)
+    y_pred_train = model.forward(x_train).data.numpy().flatten()
+    print "y_pred_train before transform is", y_pred_train
+    transform_elements(y_pred_train)
+    print "y_pred_train after transform is ", y_pred_train
+
+    print "train_y is ", train_y
+
+    print np.mean(y_pred_train == test_y)
+
+    # Make predictions using test set
+    x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
+    y_pred_test = model.forward(x_test).data.numpy().flatten()
+    print "y_pred_test before transform is", y_pred_test
+    transform_elements(y_pred_test)
+    print "y_pred_test after transform is ", y_pred_test
 
     print "test_y is ", test_y
 
-    print np.mean(y_pred == test_y)
+    print np.mean(y_pred_test == test_y)
 
     return model
 
@@ -499,30 +495,30 @@ if __name__ == '__main__':
     # # print "batch_xs", batch_xs
     # # print "batch_y_s", batch_y_s
     #
-    m = 2
-    p = 0.2
-
-    model = train_model(real_training, fake_training, m, p)
-    print get_performance(model, real_validation, fake_validation)
+    # m = 2
+    # p = 0.2
     #
+    # model = train_model(real_training, fake_training, m, p)
+    # print get_performance(model, real_validation, fake_validation)
+    # #
+    # #
+    # #
+    # # # print tune_model(real_training, fake_training, real_validation, fake_validation)
+    # #
+    # topbottom = get_top_bottom_word_occurrences(model)
+    # topbottom_stop = get_top_bottom_word_occurrences(model, ENGLISH_STOP_WORDS)
     #
+    # for items in topbottom:
+    #     print "\\begin{enumerate}"
+    #     for i in items:
+    #         print "\t\\item {}".format(i)
+    #     print "\\end{enumerate}"
     #
-    # # print tune_model(real_training, fake_training, real_validation, fake_validation)
-    #
-    topbottom = get_top_bottom_word_occurrences(model)
-    topbottom_stop = get_top_bottom_word_occurrences(model, ENGLISH_STOP_WORDS)
-
-    for items in topbottom:
-        print "\\begin{enumerate}"
-        for i in items:
-            print "\t\\item {}".format(i)
-        print "\\end{enumerate}"
-
-    for items in topbottom_stop:
-        print "\\begin{enumerate}"
-        for i in items:
-            print "\t\\item {}".format(i)
-        print "\\end{enumerate}"
+    # for items in topbottom_stop:
+    #     print "\\begin{enumerate}"
+    #     for i in items:
+    #         print "\t\\item {}".format(i)
+    #     print "\\end{enumerate}"
 
     # high_fake = [a for a in fake_counts if a in real_counts and fake_counts[a] > 3 and fake_counts[a] > real_counts[a]]
 
@@ -538,6 +534,6 @@ if __name__ == '__main__':
 
     # dictionary_unique_words = process_headlines(real_training, fake_training)
     # pickle.dump(dictionary_unique_words, open("Part4Dictionary.pkl", 'wb'))
-    # unique_words_dict = pickle.load(open("Part4Dictionary.pkl"))
-    #
-    # model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+    unique_words_dict = pickle.load(open("Part4Dictionary.pkl"))
+
+    model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
