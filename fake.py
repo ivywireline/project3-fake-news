@@ -412,28 +412,33 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
 
 
     # Make predictions using the training set
-    y_pred_train = model.forward(x_train).data.numpy().flatten()
+    # y_pred_train = model.forward(x_train).data.numpy().flatten()
     # print "y_pred_train before transform is", y_pred_train
     # transform_elements(y_pred_train)
     # print "y_pred_train after transform is ", y_pred_train
 
     #print "train_y is ", train_y
 
-    print "Performance on Training Set", np.mean(y_pred_train == train_y)
+    train_perf = evaluate_logreg_model(model, x_train, train_y)
+    print "Performance on Training Set", train_perf #np.mean(y_pred_train == train_y)
 
     # Make predictions using the Validation set
-    y_pred_valid = model.forward(x_train).data.numpy().flatten()
-    print "Performance on Validation Set", np.mean(y_pred_valid == valid_y)
+    # y_pred_valid = model.forward(x_train).data.numpy().flatten()
+    # transform_elements(y_pred_valid)
+    valid_perf = evaluate_logreg_model(model, x_valid, valid_y)
+    print "Performance on Validation Set", valid_perf
 
     # Make predictions using test set
-    y_pred_test = model.forward(x_test).data.numpy().flatten()
+    # y_pred_test = model.forward(x_test).data.numpy().flatten()
+    # transform_elements(y_pred_test)
     # print "y_pred_test before transform is", y_pred_test
     # transform_elements(y_pred_test)
     # print "y_pred_test after transform is ", y_pred_test
 
     #print "test_y is ", test_y
 
-    print "Performance on Test Set", np.mean(y_pred_test == test_y)
+    test_perf = evaluate_logreg_model(model, x_test, test_y)
+    print "Performance on Test Set", test_perf
 
     return model, {
         'train': performance_data_training,
