@@ -347,7 +347,7 @@ def plot_learning_curve(learning_data, filename="Part4LearningCurve"):
         plt.savefig(filename)
 
 
-def part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict):
+def part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, reg_lambda=0):
     # 1 means real. 0 means fake.
     unique_words_number = len(unique_words_dict)
 
@@ -361,8 +361,9 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     # Hyper Parameters
     input_size = unique_words_number
     num_classes = 1
-    num_iters = 1000
+    num_iters = 650
     learning_rate = 0.0001
+    #reg_lambda = 0
 
     # model = LogisticRegression(input_size, num_classes)
     model = torch.nn.Sequential(
@@ -393,7 +394,10 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
         y_pred = model(x_train)
         loss = loss_fn.forward(y_pred, y_train)
 
+        l2_reg = sum([W.norm(2) for W in model.parameters()])
+
         optimizer.zero_grad()
+        loss = loss_fn.forward(y_pred, y_train) + l2_reg * reg_lambda
 
         loss.backward()
         optimizer.step()
@@ -436,6 +440,20 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
         'valid': performance_data_valid,
         'test': performance_data_test,
     }
+
+
+def optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict):
+    models = []
+    max_valid_perf = []
+    step = 0.02
+    for i in range(50):
+        reg_lambda = i * step
+        model, perf = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, reg_lambda)
+        models.append(model)
+        max_valid_perf.append(perf['valid'][-1])
+
+    max_perf = max(enumerate(max_valid_perf), key=lambda x: x[1])[0]
+    return models[max_perf], max_perf * step
 
 
 def part7(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, max_depth):
@@ -527,7 +545,9 @@ if __name__ == '__main__':
     }
 
     model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
-    plot_learning_curve(performance_data)
+    # plot_learning_curve(performance_data)
+
+    #model, l2_lambda = optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
 
 
     ############################## Part 7 ##############################
