@@ -326,6 +326,27 @@ def evaluate_logreg_model(model, x, expected_y):
     return np.mean(y_pred == expected_y)
 
 
+def plot_learning_curve(learning_data, filename="Part4LearningCurve"):
+    train_vals = learning_data["train"]
+    validation_vals = learning_data["valid"]
+    test_vals = learning_data["test"]
+
+    x_axis = [i for i in range(len(train_vals))]
+
+    fig = plt.figure()
+    plt.plot(x_axis, train_vals, 'r-', label="Training Set")
+    plt.plot(x_axis, validation_vals, 'y-', label="Validation Set")
+    plt.plot(x_axis, test_vals, label="Test Set")
+
+    plt.xlabel("Number of Epochs")
+    plt.ylabel("Proportion of Correct Guesses")
+    plt.title("Learning Curves")
+    plt.legend(loc="best")
+
+    if filename:
+        plt.savefig(filename)
+
+
 def part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict):
     # 1 means real. 0 means fake.
     unique_words_number = len(unique_words_dict)
@@ -388,27 +409,31 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
 
     # Make predictions using the training set
     y_pred_train = model.forward(x_train).data.numpy().flatten()
-    print "y_pred_train before transform is", y_pred_train
-    transform_elements(y_pred_train)
-    print "y_pred_train after transform is ", y_pred_train
+    # print "y_pred_train before transform is", y_pred_train
+    # transform_elements(y_pred_train)
+    # print "y_pred_train after transform is ", y_pred_train
 
     #print "train_y is ", train_y
 
     print "Performance on Training Set", np.mean(y_pred_train == train_y)
 
+    # Make predictions using the Validation set
+    y_pred_valid = model.forward(x_train).data.numpy().flatten()
+    print "Performance on Validation Set", np.mean(y_pred_valid == valid_y)
+
     # Make predictions using test set
     y_pred_test = model.forward(x_test).data.numpy().flatten()
-    print "y_pred_test before transform is", y_pred_test
-    transform_elements(y_pred_test)
-    print "y_pred_test after transform is ", y_pred_test
+    # print "y_pred_test before transform is", y_pred_test
+    # transform_elements(y_pred_test)
+    # print "y_pred_test after transform is ", y_pred_test
 
     #print "test_y is ", test_y
 
     print "Performance on Test Set", np.mean(y_pred_test == test_y)
 
     return model, {
-        'training': performance_data_training,
-        'validation': performance_data_valid,
+        'train': performance_data_training,
+        'valid': performance_data_valid,
         'test': performance_data_test,
     }
 
@@ -495,21 +520,14 @@ if __name__ == '__main__':
     #     json.dump(fake_counts, fake_word_counts)
 
     ############################ Part 4 ################################
-
-    # dictionary_unique_words = process_headlines(real_training, fake_training)
-    # pickle.dump(dictionary_unique_words, open("Part4Dictionary.pkl", 'wb'))
-    #unique_words_dict = pickle.load(open("Part4Dictionary.pkl"))
-
-    # print "Fetching Wordlist"
-    #
     wordlist = get_wordlist(real_training, fake_training)
 
     unique_words_dict = {
         wordlist[i]: i for i in range(len(wordlist))
     }
-    #
-    # print "Training model"
+
     model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+    plot_learning_curve(performance_data)
 
 
     ############################## Part 7 ##############################
