@@ -81,7 +81,7 @@
 		
 		In order to tune the $m$ and $\hat{p}$ parameters, we trained the model with varying values, with $m \in [1, 20]$ and $p\in [0.1, 1.0]$, with a step of 1 and 0.1, respectively, and found the values that performed best on the validation set.
 		
-		The performance of the classifier on the training set is 96\%, and the performance on the test set is 85\%
+		The performance of the classifier on the training set is 96\%, the performance on the validation set is 85\% the performance on the test set is 85\%
 		
 		The best params are as follows: \\
 		\[m = 2, \hat{p} = 0.2\]
@@ -347,6 +347,8 @@ def get_performance(model, real, fake):
 			\item back
 			\item pence
 		\end{enumerate}
+		This list contains a combination of the 10 words whose presence most strongly predicts that the news is real, and the 10 words whose absence most strongly predicts that the news is fake.
+		For example, ``nfl'' can be found in the former list from 3(a), and ``australia,'' and ``ban'' can be found in the latter list.
 		
 		The top negative words in the logistic regression model are as follows:
 		\begin{enumerate}
@@ -361,6 +363,13 @@ def get_performance(model, real, fake):
 			\item are
 			\item need
 		\end{enumerate}
+		This list should contain a combination of the 10 words whose presence most strongly predicts that the news is fake, and the 10 words whose absence most strongly predicts that the news is real.
+		For example, ``hillary'' can be found in the former list from 3(a).
+		However, no words can be found in the latter list.
+		This is likely due to stop words pushing the other words down the list.
+		
+		Notably, the stopwords contained in these lists are not the same.
+	
 		\item %6b	
 		The top positive words in the logistic regression model excluding stopwords are as follows:
 		\begin{enumerate}
@@ -375,6 +384,8 @@ def get_performance(model, real, fake):
 			\item senate
 			\item push
 		\end{enumerate}
+		Again, this is a combination of the top 10 words whose presence most strongly predicts that the news is real, and the top 10 words whose absence most strongly predicts that the news is fake.
+		The similarities are the same as in 6(a).
 		
 		The top negative words in the logistic regression model excluding stopwords are as follows:
 		\begin{enumerate}
@@ -389,6 +400,9 @@ def get_performance(model, real, fake):
 			\item won
 			\item riots
 		\end{enumerate}
+		Again, this is a combination of the top 10 words whose presence most strongly predicts that the news is fake, and the top 10 words whose absence most strongly predicts that the news is real.
+		The similarities are the same as in 6(a).
+		There seem to be some additional synonyms that correspond (e.g. ``votes'' vs. ``vote''), but not additional exact matches.
 		\item %6c
 	\end{enumerate}
 	\item %7
