@@ -462,110 +462,6 @@ def optimL2_lambda(real_training, fake_training, real_validation, fake_validatio
 
 ########################### Part 7 ############################
 
-def get_train_decision_tree(real_training, fake_training, unique_words_dict):
-    # 1 means real. 0 means fake.
-    unique_words_set = get_wordlist(real_training, fake_training)
-    unique_words_number = len(unique_words_set)
-
-    # Number of features is the number of the unique words in the training set
-    batch_xs = []
-    # There are only 2 classes - real or fake
-    batch_y_s = [1 for _ in xrange(len(real_training))] + [0 for _ in xrange(len(fake_training))]
-
-    for headline in real_training:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in set(headline_words):
-            index = unique_words_dict[word]
-            vector_headline[index] = 1
-        # batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_xs.append(vector_headline)
-
-    for headline in fake_training:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in set(headline_words):
-            index = unique_words_dict[word]
-            vector_headline[index] = 1
-        # batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_xs.append(vector_headline)
-
-    batch_xs = np.vstack(batch_xs)
-
-    return batch_xs, batch_y_s
-
-
-def get_validation_decision_tree(real_training, fake_training, real_validation, fake_validation, unique_words_dict):
-    # 1 means real. 0 means fake.
-    unique_words_set = get_wordlist(real_training, fake_training)
-    unique_words_number = len(unique_words_set)
-
-    # Number of features is the number of the unique words in the validation set
-    batch_xs = np.zeros((0, unique_words_number))
-    # There are only 2 classes - real or fake
-    batch_y_s = []
-
-    for headline in real_validation:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in headline_words:
-            if word in unique_words_dict:
-                index = unique_words_dict[word]
-                vector_headline[index] = 1
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(1)
-
-    for headline in fake_validation:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in headline_words:
-            if word in unique_words_dict:
-                index = unique_words_dict[word]
-                vector_headline[index] = 0
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(0)
-
-    return batch_xs, batch_y_s
-
-
-def get_test_decision_tree(real_training, fake_training, real_test, fake_test, unique_words_dict):
-    # 1 means real. 0 means fake.
-    unique_words_set = get_wordlist(real_training, fake_training)
-    unique_words_number = len(unique_words_set)
-
-    # Number of features is the number of the unique words in the validation set
-    batch_xs = np.zeros((0, unique_words_number))
-    # There are only 2 classes - real or fake
-    batch_y_s = []
-
-    for headline in real_test:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in headline_words:
-            if word in unique_words_dict:
-                index = unique_words_dict[word]
-                vector_headline[index] = 1
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(1)
-
-
-    for headline in fake_test:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in headline_words:
-            if word in unique_words_dict:
-                index = unique_words_dict[word]
-                vector_headline[index] = 0
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(0)
-
-    return batch_xs, batch_y_s
 
 def part7(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, max_depth):
     train_x, train_y = vectorize_headlines(real_training, fake_training, unique_words_dict)
@@ -599,7 +495,26 @@ def part7(real_training, fake_training, real_validation, fake_validation, real_t
     return score_train_gini, score_valid_gini, score_test_gini, score_train_entropy, score_valid_entropy, score_test_entropy
 
 
-def part7_plot(depth_values, ):
+def plot_learning_curve_part_7(learning_data, filename="Part4LearningCurve"):
+    train_vals = learning_data["train"]
+    validation_vals = learning_data["valid"]
+    test_vals = learning_data["test"]
+
+    x_axis = [i for i in range(len(train_vals))]
+
+    fig = plt.figure()
+    plt.plot(x_axis, train_vals, 'r-', label="Training Set")
+    plt.plot(x_axis, validation_vals, 'y-', label="Validation Set")
+    plt.plot(x_axis, test_vals, label="Test Set")
+
+    plt.xlabel("Number of Epochs")
+    plt.ylabel("Proportion of Correct Guesses")
+    plt.title("Learning Curves")
+    plt.legend(loc="best")
+
+    if filename:
+        plt.savefig(filename)
+
 
 
 
@@ -664,11 +579,11 @@ if __name__ == '__main__':
     unique_words_dict = {
         wordlist[i]: i for i in range(len(wordlist))
     }
-
-    #model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
-    # plot_learning_curve(performance_data)
-
-    model, l2_lambda = optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+    #
+    # #model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+    # # plot_learning_curve(performance_data)
+    #
+    # model, l2_lambda = optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
 
 
     ############################## Part 7 ##############################
