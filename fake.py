@@ -450,8 +450,8 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
 def optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict):
     models = []
     max_valid_perf = []
-    step = 0.02
-    for i in range(50):
+    step = 0.5
+    for i in range(21):
         reg_lambda = i * step
         model, perf = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, reg_lambda)
         models.append(model)
@@ -549,10 +549,10 @@ if __name__ == '__main__':
         wordlist[i]: i for i in range(len(wordlist))
     }
 
-    model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+    #model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
     # plot_learning_curve(performance_data)
 
-    #model, l2_lambda = optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+    model, l2_lambda = optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
 
 
     ############################## Part 7 ##############################
