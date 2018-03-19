@@ -57,7 +57,7 @@
 		Some useful keywords could be ``racist'' (5 occurrences in fake, 2 occurrences in real), ``hillary,'' (18 occurrences in real, 97 occurrences in fake), and ``rigged'' (3 occurrences in real, 15 occurrences in fake).
 
 		\item %2
-		The Naive Bayes algorithm was computed by computing the conditional probability 
+		The Naive Bayes algorithm was computed by computing the conditional probability
 		\[
 			P(x_i | c) =  \frac{count(x_i = 1, c)}{count(c)}
 		\]
@@ -67,22 +67,22 @@
 		\[
 			P(x_i | c) =  \frac{count(x_i = 1, c) + m\hat{p}}{count(c) + m}
 		\]
-		
+
 		To predict whether a headline was real or fake, we computed the conditional probability
 		\[P(x_1, ..., x_n | c) P(c)\]
-		by computing 
+		by computing
 		\[\prod_{i = 1}^{n}p(x_i|y=c)\]
 		However, since for the less frequent words, $p(x_i|y=c)$ is very small, and multiplying them together may result in underflow, we computed the exponential of the sum of the log probabilities instead.
-		Thus, our formula becomes 
+		Thus, our formula becomes
 		\[
 			P(x_1, ..., x_n | c) P(c) = \exp\left(\sum_{i = 1}^{n}\log(P(x_i|y=c))\right)P(c)
 		\]
 		We then return the class with the highest probability as our prediction.
-		
+
 		In order to tune the $m$ and $\hat{p}$ parameters, we trained the model with varying values, with $m \in [1, 20]$ and $p\in [0.1, 1.0]$, with a step of 1 and 0.1, respectively, and found the values that performed best on the validation set.
-		
+
 		The performance of the classifier on the training set is 96\%, the performance on the validation set is 85\% the performance on the test set is 85\%
-		
+
 		The best params are as follows: \\
 		\[m = 2, \hat{p} = 0.2\]
 		\\
@@ -173,7 +173,7 @@ def get_performance(model, real, fake):
 				\item nfl
 				\item south
 			\end{enumerate}
-			
+
 			The 10 words whose absence most strongly predicts that the news is real
 			\begin{enumerate}
 				\item trump
@@ -187,7 +187,7 @@ def get_performance(model, real, fake):
 				\item clinton
 				\item in
 			\end{enumerate}
-			
+
 			The 10 words whose presence most strongly predicts that the news is fake
 			\begin{enumerate}
 				\item hats
@@ -201,7 +201,7 @@ def get_performance(model, real, fake):
 				\item pantano
 				\item amtsantritt
 			\end{enumerate}
-			
+
 			The 10 words whose absence most strongly predicts that the news is fake
 			\begin{enumerate}
 				\item donald
@@ -215,7 +215,7 @@ def get_performance(model, real, fake):
 				\item travel
 				\item australia
 			\end{enumerate}
-		
+
 			These lists were obtained by finding the words with the max values for the conditional probabilities
 			\[
 				P(\text{class} | \text{word}) = \frac{P(\text{word} | \text{class})P(\text{class})}{P(\text{word})}
@@ -233,21 +233,21 @@ def get_performance(model, real, fake):
 			\]
 			The words that have the biggest sway on whether a headline is real or fake tend to be words that only appear in one set and not the other.
 			However, the presence of a word in one class's top 10 doesn't imply that it will be as strong when absent from the other class.
-			
-			
+
+
 			%(model.probs_real[k] * prob_real) / (model.real_word_counts[k] + model.m / float(model.real_word_counts[k] + model.fake_word_counts[k]))
 			%If the conditional probability is high, then if the word is present in the headline, it will not decrease the term $P(x_1, ..., x_n | c)$ as much (since the probability is closer to 1), which means that the final conditional probability will be higher.
 			%If the conditional probability is low, then if the word is \textit{absent} from the headline, it will also result in a lower penalty than if the probability were higher.
 			%That's because $1 - P(x_i|c)$ is used instead.
 			For the code, please see \verb|get_top_bottom_word_occurrences| in fake.py.
-			
+
 			%However, due to the addition of the $m$ and $\hat{p}$ values to the equation for $p(x_i|c)$, the bounds on the probability is not 1.0 and 0.0.
 			%In the case of our optimal values ($m = 2, \hat{p} = 0.2$), the min and max values are  0.00392 and 0.984, respectively.
 			%Since \(1 - 0.00392 > 0.984\), having a missing word absent is stronger than having a common word present.
-			
+
 			\item %3b
 			The following lists have had the stopwords from scikit\_learn excluded
-			
+
 			The 10 words whose presence most strongly predicts that the news is real
 			\begin{enumerate}
 				\item japan
@@ -261,7 +261,7 @@ def get_performance(model, real, fake):
 				\item nfl
 				\item south
 			\end{enumerate}
-			
+
 			The 10 words whose absence most strongly predicts that the news is real
 			\begin{enumerate}
 				\item trump
@@ -275,7 +275,7 @@ def get_performance(model, real, fake):
 				\item win
 				\item watch
 			\end{enumerate}
-			
+
 			The 10 words whose presence most strongly predicts that the news is fake
 			\begin{enumerate}
 				\item hats
@@ -289,7 +289,7 @@ def get_performance(model, real, fake):
 				\item pantano
 				\item amtsantritt
 			\end{enumerate}
-			
+
 			The 10 words whose absence most strongly predicts that the news is fake
 			\begin{enumerate}
 				\item donald
@@ -308,10 +308,10 @@ def get_performance(model, real, fake):
 			These words are also uninteresting on their own, and so they crowd up the word frequency rankings, possibly pushing more interesting words down the list.
 			Another reason for removing stopwords would be when the input set includes headlines of different languages.
 			This is because stopwords in one language are usually uncommon in other languages, and once again skew the results.
-			
+
 			It would make sense to keep stopwords because their presence could still help distinguish between classes, because one class might use certain stopwords in a different way, or use them more (or less) frequently than the other class.
 			Furthermore, in testing, we have found that training while excluding stopwords does not necessarily increase the performance of our model.
-			
+
 		\end{enumerate}
 	\item %4
 	The learning curves of Logistic Regression can be seen in Figure \ref{fig:part4learningcurve}.
@@ -321,15 +321,15 @@ def get_performance(model, real, fake):
 		\caption{Performance of Logistic Regression vs. Number of Epochs}
 		\label{fig:part4learningcurve}
 	\end{figure}
-	
+
 	% talk about how you chose the regularization parameter
 	We used L2 regularization to prevent overfitting.
 	We chose the $\lambda$ value by training the model on the training set with varying $\lambda$ values, and choosing the value that had the highest performance on the validation set.
 	The value that seemed to perform the best was 0.007.
-	
+
 	When searching for the $\lambda$ value, we started off with small values and a small step size.
 	This is because our performance on the validation set without L2 regularization was already quite good, and an excessively large lambda value would penalize the data too much.
-	
+
 	\item %5
 	\item %6
 	\begin{enumerate}
@@ -349,7 +349,7 @@ def get_performance(model, real, fake):
 		\end{enumerate}
 		This list contains a combination of the 10 words whose presence most strongly predicts that the news is real, and the 10 words whose absence most strongly predicts that the news is fake.
 		For example, ``nfl'' can be found in the former list from 3(a), and ``australia,'' and ``ban'' can be found in the latter list.
-		
+
 		The top negative words in the logistic regression model are as follows:
 		\begin{enumerate}
 			\item this
@@ -367,10 +367,10 @@ def get_performance(model, real, fake):
 		For example, ``hillary'' can be found in the former list from 3(a).
 		However, no words can be found in the latter list.
 		This is likely due to stop words pushing the other words down the list.
-		
+
 		Notably, the stopwords contained in these lists are not the same.
-	
-		\item %6b	
+
+		\item %6b
 		The top positive words in the logistic regression model excluding stopwords are as follows:
 		\begin{enumerate}
 			\item nfl
@@ -386,7 +386,7 @@ def get_performance(model, real, fake):
 		\end{enumerate}
 		Again, this is a combination of the top 10 words whose presence most strongly predicts that the news is real, and the top 10 words whose absence most strongly predicts that the news is fake.
 		The similarities are the same as in 6(a).
-		
+
 		The top negative words in the logistic regression model excluding stopwords are as follows:
 		\begin{enumerate}
 			\item reason
@@ -408,8 +408,94 @@ def get_performance(model, real, fake):
 	\item %7
 	\begin{enumerate}
 		\item %7a
+
+	The following graph shows the relationship between \textbf{max\_depth} values and the accuracy of the training and validation sets.
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=\linewidth]{Part7MaxDepthGraph}
+		\caption{Performance of Training and Validations sets and Max\_depth values}
+		\label{fig:part4learningcurve}
+	\end{figure}
+
+	As one can see from the graph, the best max\_depth values to use is 25 as the Decision Tree classifier reaches the best performance at that value for the validation set. In addition to max depth values, I have also tried out different criterion values. I have tested out Gini and Entropy criterion and found that the Entropy criterion has better performance than the former. I have also tried out different min\_sample\_leaf values and settled on 15 because it gives better values than the rest. If the minimum sample leaf value is too small, it will likely to cause over-fitting as each branch may not have enough data for the algorithm to generalize well. If the value is too large, then it will prevent the model from learning at all.
 		\item %7b
+
+		Here is the visualization of the first two layers of the decision tree.
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=\linewidth]{part7b_first_two_layers.png}
+		\caption{Visualization of the first 2 layers of the Decision Tree}
+		\label{fig:part4learningcurve}
+	\end{figure}
+
+	The most important keyword features in the Naive Bayes from 3a are \newline
+	Positive indication that headline is real:
+			\begin{enumerate}
+				\item hats
+				\item debunks
+				\item sleep
+				\item hating
+				\item battleground
+				\item haters
+				\item pointing
+				\item dazu
+				\item pantano
+				\item amtsantritt
+			\end{enumerate}
+	Negative indicatin that headline is real: \newline
+			\begin{enumerate}
+				\item donald
+				\item trumps
+				\item us
+				\item says
+				\item ban
+				\item korea
+				\item north
+				\item turnbull
+				\item travel
+				\item australia
+			\end{enumerate}
+
+	The most important keyword features for the logistic regression model are: \newline
+
+	Positive indication that it's real:
+			\begin{enumerate}
+			\item nfl
+			\item australia
+			\item ban
+			\item defends
+			\item over
+			\item week
+			\item appears
+			\item law
+			\item back
+			\item pence
+		\end{enumerate}
+
+	Negative indication that it's real:
+		\begin{enumerate}
+			\item this
+			\item reason
+			\item paid
+			\item hillary
+			\item have
+			\item it
+			\item 5
+			\item votes
+			\item are
+			\item need
+		\end{enumerate}
+
+	The most important keyword features for the decision tree are 'donald', 'trumps', 'the', 'hillary', 'on', 'a', 'of'.
+	The keywords donald and trumps are in the set of important features in naive bayes. The keyword hillary is in the set of important features in logistic regression. It is interesting that all these words are negative indications that the headline is real, i.e they are fake news predictors.
 		\item %7c
+	The performance of the Naive Bayes is $96\%$ on the training set, $85\%$ on the validation set, $85\%$ on the test set.
+
+	The performance of the Logistic Regression is $94\%$ on the training set, $80\%$ on the validation set $80\%$ on the test set.
+
+	The performance of the
+
+
 	\end{enumerate}
 	\item %8
 	\begin{enumerate}
