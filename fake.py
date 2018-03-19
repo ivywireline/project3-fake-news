@@ -9,9 +9,14 @@ import torchvision.transforms as transforms
 from torch.autograd import Variable
 import cPickle as pickle
 
+
 from collections import defaultdict
 
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+from sklearn.cross_validation import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+from sklearn import tree
 
 real_filename = 'clean_real.txt'
 fake_filename = 'clean_fake.txt'
@@ -478,8 +483,35 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     return model
 
 
+def part7(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, max_depth):
+    train_x, train_y = get_train(real_training, fake_training, unique_words_dict)
+    valid_x, valid_y = get_validation(real_training, fake_training, real_test, fake_test, unique_words_dict)
+    test_x, test_y = get_test(real_training, fake_training, real_test, fake_test, unique_words_dict)
+
+    # Uses the Gini Impure index
+    clf_gini = DecisionTreeClassifier(criterion = "gini", max_depth=max_depth)
+    clf_gini = clf_gini.fit(train_x, train_y)
+    y_pred_train_gini = clf_gini.predict(train_x)
+    score_train_gini = accuracy_score(train_y, y_pred_train_gini)
+
+    y_pred_valid_gini = clf_gini.predict(valid_x)
+    score_valid_gini = accuracy_score(valid_y, y_pred_valid_gini)
+
+    # Use the criterion information gain
+    clf_entropy = DecisionTreeClassifier(criterion = "entropy", max_depth=max_depth)
+    clf_entropy = clf_entropy.fit(train_x, train_y)
+    y_pred_train_entropy = clf_entropy.predict(train_x)
+    score_train_entropy = accuracy_score(train_y, y_pred_train_entropy)
+
+    y_pred_valid_entropy = clf_entropy.predict(valid_x)
+    score_valid_entropy = accuracy_score(valid_y, y_pred_valid_entropy)
+
+    return score_train_gini, score_valid_gini, score_train_entropy, score_valid_entropy
+
+
 if __name__ == '__main__':
     random.seed(0)
+    np.random.seed(0)
     real_training, real_validation, real_test = load_headlines(real_filename)
     fake_training, fake_validation, fake_test = load_headlines(fake_filename)
 
@@ -538,13 +570,24 @@ if __name__ == '__main__':
     # pickle.dump(dictionary_unique_words, open("Part4Dictionary.pkl", 'wb'))
     #unique_words_dict = pickle.load(open("Part4Dictionary.pkl"))
 
-    print "Fetching Wordlist"
-
+    # print "Fetching Wordlist"
+    #
     wordlist = get_wordlist(real_training, fake_training)
 
     unique_words_dict = {
         wordlist[i]: i for i in range(len(wordlist))
     }
+    #
+    # print "Training model"
+    # model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
 
-    print "Training model"
-    model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+
+    ############################## Part 7 ##############################
+    max_depth = 10
+    score_train_gini, score_valid_gini, score_train_entropy, score_valid_entropy = part7(real_training, fake_training, real_validation,
+        fake_validation, real_test, fake_test, unique_words_dict, max_depth)
+
+    print "score_train_gini is ", score_train_gini
+    print "score_valid_gini is ", score_valid_gini
+    print "score_train_entropy is ", score_train_entropy
+    print "score_valid_entropy is ", score_valid_entropy
