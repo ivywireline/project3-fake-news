@@ -4,7 +4,6 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
-import torch.nn as nn
 import torchvision.datasets as dsets
 import torchvision.transforms as transforms
 from torch.autograd import Variable
@@ -281,29 +280,31 @@ def get_train(real_training, fake_training, unique_words_dict):
     unique_words_number = len(unique_words_set)
 
     # Number of features is the number of the unique words in the training set
-    batch_xs = np.zeros((0, unique_words_number))
+    batch_xs = []
     # There are only 2 classes - real or fake
-    batch_y_s = []
+    batch_y_s = [1 for _ in xrange(len(real_training))] + [0 for _ in xrange(len(fake_training))]
 
     for headline in real_training:
         # Vector simulating the headline
         vector_headline = np.zeros(unique_words_number)
         headline_words = headline.split(" ")
-        for word in headline_words:
+        for word in set(headline_words):
             index = unique_words_dict[word]
             vector_headline[index] = 1
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(1)
+        # batch_xs = np.vstack((batch_xs, vector_headline))
+        batch_xs.append(vector_headline)
 
     for headline in fake_training:
         # Vector simulating the headline
         vector_headline = np.zeros(unique_words_number)
         headline_words = headline.split(" ")
-        for word in headline_words:
+        for word in set(headline_words):
             index = unique_words_dict[word]
             vector_headline[index] = 1
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(0)
+        # batch_xs = np.vstack((batch_xs, vector_headline))
+        batch_xs.append(vector_headline)
+
+    batch_xs = np.vstack(batch_xs)
 
     return batch_xs, batch_y_s
 
@@ -389,15 +390,11 @@ def transform_elements(lst):
 
 def part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict):
     # 1 means real. 0 means fake.
-    unique_words_set = get_wordlist(real_training, fake_training)
-    unique_words_number = len(unique_words_set)
+    unique_words_number = len(unique_words_dict)
 
     train_x, train_y = get_train(real_training, fake_training, unique_words_dict)
-    train_y = np.vstack(train_y)
-    valid_x, valid_y = get_validation(real_training, fake_training, real_test, fake_test, unique_words_dict)
-    valid_y = np.vstack(valid_y)
+    #valid_x, valid_y = get_validation(real_training, fake_training, real_test, fake_test, unique_words_dict)
     test_x, test_y = get_test(real_training, fake_training, real_test, fake_test, unique_words_dict)
-    test_y = np.vstack(test_y)
 
     dtype_float = torch.FloatTensor
     dtype_long = torch.LongTensor
@@ -411,39 +408,44 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     iter_limit = 3000
 
     # model = LogisticRegression(input_size, num_classes)
-    model = torch.nn.Sequential()
-    model.add_module("linear",
-                     torch.nn.Linear(input_size, num_classes, bias=False))
-    model.add_module("Sigmoid", nn.Sigmoid())
+    model = torch.nn.Sequential(
+        torch.nn.Linear(input_size, num_classes, bias=False),
+        torch.nn.Sigmoid(),
+    )
+    # model.add_module("linear",
+    #                  torch.nn.Linear(input_size, num_classes, bias=False),)
+    # model.add_module("Sigmoid", nn.Sigmoid())
 
     torch.nn.init.xavier_uniform(model[0].weight)
 
     # Loss and Optimizer
     # Softmax is internally computed.
     # Set parameters to be updated.
-    loss_fn = nn.BCELoss()
+    loss_fn = torch.nn.BCELoss()
     # loss_fn = StableBCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    batches = np.random.permutation(range(train_x.shape[0]))
-
-    intermediate_perf = {
-        'train': [],
-        'valid': [],
-        'test': [],
-    }
+    # batches = np.random.permutation(range(train_x.shape[0]))
+    #
+    # intermediate_perf = {
+    #     'train': [],
+    #     'valid': [],
+    #     'test': [],
+    # }
 
     headline_tensor = torch.from_numpy(train_x)
-    headline_var = Variable(headline_tensor, requires_grad=False).type(dtype_float)
+    x = Variable(headline_tensor).type(dtype_float)
     # labels_var = Variable(labels)
-    label_tensor = torch.from_numpy(train_y)
-    label_var = Variable(label_tensor, requires_grad=False).type(dtype_float)
+    label_tensor = torch.from_numpy(np.vstack(train_y))
+    y = Variable(label_tensor, requires_grad=False).type(dtype_float)
 
     for epoch in range(num_epochs):
         # Forward + Backward + Optimize
-        output = model.forward(headline_var)
-        loss = loss_fn.forward(output, label_var)
+        y_pred = model(x)
+        loss = loss_fn.forward(y_pred, y)
+
         optimizer.zero_grad()
+
         loss.backward()
         optimizer.step()
 
@@ -458,9 +460,9 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     transform_elements(y_pred_train)
     print "y_pred_train after transform is ", y_pred_train
 
-    print "train_y is ", train_y
+    #print "train_y is ", train_y
 
-    print np.mean(y_pred_train == test_y)
+    print "Performance on Training Set", np.mean(y_pred_train == train_y)
 
     # Make predictions using test set
     x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
@@ -469,9 +471,9 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     transform_elements(y_pred_test)
     print "y_pred_test after transform is ", y_pred_test
 
-    print "test_y is ", test_y
+    #print "test_y is ", test_y
 
-    print np.mean(y_pred_test == test_y)
+    print "Performance on Test Set", np.mean(y_pred_test == test_y)
 
     return model
 
@@ -534,6 +536,15 @@ if __name__ == '__main__':
 
     # dictionary_unique_words = process_headlines(real_training, fake_training)
     # pickle.dump(dictionary_unique_words, open("Part4Dictionary.pkl", 'wb'))
-    unique_words_dict = pickle.load(open("Part4Dictionary.pkl"))
+    #unique_words_dict = pickle.load(open("Part4Dictionary.pkl"))
 
+    print "Fetching Wordlist"
+
+    wordlist = get_wordlist(real_training, fake_training)
+
+    unique_words_dict = {
+        wordlist[i]: i for i in range(len(wordlist))
+    }
+
+    print "Training model"
     model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
