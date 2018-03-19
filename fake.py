@@ -278,112 +278,39 @@ def process_headlines(real_training, fake_training):
 
     return unique_words_dict
 
-
-def get_train(real_training, fake_training, unique_words_dict):
+def vectorize_headlines(real, fake, unique_words_dict):
     # 1 means real. 0 means fake.
-    unique_words_set = get_wordlist(real_training, fake_training)
+    unique_words_set = unique_words_dict.keys()
     unique_words_number = len(unique_words_set)
 
     # Number of features is the number of the unique words in the training set
     batch_xs = []
     # There are only 2 classes - real or fake
-    batch_y_s = [1 for _ in xrange(len(real_training))] + [0 for _ in xrange(len(fake_training))]
+    batch_y_s = [1 for _ in xrange(len(real))] + [0 for _ in xrange(len(fake))]
 
-    for headline in real_training:
+    for headline in real:
         # Vector simulating the headline
         vector_headline = np.zeros(unique_words_number)
         headline_words = headline.split(" ")
         for word in set(headline_words):
-            index = unique_words_dict[word]
-            vector_headline[index] = 1
-        # batch_xs = np.vstack((batch_xs, vector_headline))
+            if word in unique_words_dict:
+                index = unique_words_dict[word]
+                vector_headline[index] = 1
         batch_xs.append(vector_headline)
 
-    for headline in fake_training:
+    for headline in fake:
         # Vector simulating the headline
         vector_headline = np.zeros(unique_words_number)
         headline_words = headline.split(" ")
         for word in set(headline_words):
-            index = unique_words_dict[word]
-            vector_headline[index] = 1
-        # batch_xs = np.vstack((batch_xs, vector_headline))
+            if word in unique_words_dict:
+                index = unique_words_dict[word]
+                vector_headline[index] = 1
         batch_xs.append(vector_headline)
 
     batch_xs = np.vstack(batch_xs)
 
     return batch_xs, batch_y_s
-
-
-def get_validation(real_training, fake_training, real_validation, fake_validation, unique_words_dict):
-    # 1 means real. 0 means fake.
-    unique_words_set = get_wordlist(real_training, fake_training)
-    unique_words_number = len(unique_words_set)
-
-    # Number of features is the number of the unique words in the validation set
-    batch_xs = np.zeros((0, unique_words_number))
-    # There are only 2 classes - real or fake
-    batch_y_s = []
-
-    for headline in real_validation:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in headline_words:
-            if word in unique_words_dict:
-                index = unique_words_dict[word]
-                vector_headline[index] = 1
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(1)
-
-    for headline in fake_validation:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in headline_words:
-            if word in unique_words_dict:
-                index = unique_words_dict[word]
-                vector_headline[index] = 0
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(0)
-
-    return batch_xs, batch_y_s
-
-
-def get_test(real_training, fake_training, real_test, fake_test, unique_words_dict):
-    # 1 means real. 0 means fake.
-    unique_words_set = get_wordlist(real_training, fake_training)
-    unique_words_number = len(unique_words_set)
-
-    # Number of features is the number of the unique words in the validation set
-    batch_xs = np.zeros((0, unique_words_number))
-    # There are only 2 classes - real or fake
-    batch_y_s = []
-
-    for headline in real_test:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in headline_words:
-            if word in unique_words_dict:
-                index = unique_words_dict[word]
-                vector_headline[index] = 1
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(1)
-
-
-    for headline in fake_test:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in headline_words:
-            if word in unique_words_dict:
-                index = unique_words_dict[word]
-                vector_headline[index] = 0
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(0)
-
-    return batch_xs, batch_y_s
-
 
 def transform_elements(lst):
     for i in range(len(lst)):
@@ -393,13 +320,40 @@ def transform_elements(lst):
             lst[i] = 1
 
 
-def part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict):
+def evaluate_logreg_model(model, x, expected_y):
+    y_pred = model.forward(x).data.numpy().flatten()
+    transform_elements(y_pred)
+    return np.mean(y_pred == expected_y)
+
+
+def plot_learning_curve(learning_data, filename="Part4LearningCurve"):
+    train_vals = learning_data["train"]
+    validation_vals = learning_data["valid"]
+    test_vals = learning_data["test"]
+
+    x_axis = [i for i in range(len(train_vals))]
+
+    fig = plt.figure()
+    plt.plot(x_axis, train_vals, 'r-', label="Training Set")
+    plt.plot(x_axis, validation_vals, 'y-', label="Validation Set")
+    plt.plot(x_axis, test_vals, label="Test Set")
+
+    plt.xlabel("Number of Epochs")
+    plt.ylabel("Proportion of Correct Guesses")
+    plt.title("Learning Curves")
+    plt.legend(loc="best")
+
+    if filename:
+        plt.savefig(filename)
+
+
+def part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, reg_lambda=0):
     # 1 means real. 0 means fake.
     unique_words_number = len(unique_words_dict)
 
-    train_x, train_y = get_train(real_training, fake_training, unique_words_dict)
-    #valid_x, valid_y = get_validation(real_training, fake_training, real_test, fake_test, unique_words_dict)
-    test_x, test_y = get_test(real_training, fake_training, real_test, fake_test, unique_words_dict)
+    train_x, train_y = vectorize_headlines(real_training, fake_training, unique_words_dict)
+    valid_x, valid_y = vectorize_headlines(real_validation, fake_validation, unique_words_dict)
+    test_x, test_y = vectorize_headlines(real_test, fake_test, unique_words_dict)
 
     dtype_float = torch.FloatTensor
     dtype_long = torch.LongTensor
@@ -407,80 +361,104 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     # Hyper Parameters
     input_size = unique_words_number
     num_classes = 1
-    num_epochs = 1000
-    batch_size = 32
+    num_iters = 650
     learning_rate = 0.0001
-    iter_limit = 3000
+    #reg_lambda = 0
 
     # model = LogisticRegression(input_size, num_classes)
     model = torch.nn.Sequential(
         torch.nn.Linear(input_size, num_classes, bias=False),
         torch.nn.Sigmoid(),
     )
-    # model.add_module("linear",
-    #                  torch.nn.Linear(input_size, num_classes, bias=False),)
-    # model.add_module("Sigmoid", nn.Sigmoid())
-
     torch.nn.init.xavier_uniform(model[0].weight)
 
     # Loss and Optimizer
     # Softmax is internally computed.
     # Set parameters to be updated.
     loss_fn = torch.nn.BCELoss()
-    # loss_fn = StableBCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    # batches = np.random.permutation(range(train_x.shape[0]))
-    #
-    # intermediate_perf = {
-    #     'train': [],
-    #     'valid': [],
-    #     'test': [],
-    # }
+    x_train = Variable(torch.from_numpy(train_x), requires_grad=False).type(dtype_float)
+    y_train = Variable(torch.from_numpy(np.vstack(train_y)), requires_grad=False).type(dtype_float)
 
-    headline_tensor = torch.from_numpy(train_x)
-    x = Variable(headline_tensor).type(dtype_float)
-    # labels_var = Variable(labels)
-    label_tensor = torch.from_numpy(np.vstack(train_y))
-    y = Variable(label_tensor, requires_grad=False).type(dtype_float)
+    x_valid = Variable(torch.from_numpy(valid_x), requires_grad=False).type(dtype_float)
 
-    for epoch in range(num_epochs):
+    x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
+
+    performance_data_training = []
+    performance_data_valid = []
+    performance_data_test = []
+
+    for i in range(num_iters):
         # Forward + Backward + Optimize
-        y_pred = model(x)
-        loss = loss_fn.forward(y_pred, y)
+        y_pred = model(x_train)
+        loss = loss_fn.forward(y_pred, y_train)
+
+        l2_reg = sum([W.norm(2) for W in model.parameters()])
 
         optimizer.zero_grad()
+        loss = loss_fn.forward(y_pred, y_train) + l2_reg * reg_lambda
 
         loss.backward()
         optimizer.step()
 
         print ('Epoch: [%d/%d], Loss: %.4f'
-               % (epoch+1, num_epochs, loss.data[0]))
+               % (i+1, num_iters, loss.data[0]))
+
+        # evaluate model
+        performance_data_training.append(evaluate_logreg_model(model, x_train, train_y))
+        performance_data_valid.append(evaluate_logreg_model(model, x_valid, valid_y))
+        performance_data_test.append(evaluate_logreg_model(model, x_test, test_y))
+
 
     # Make predictions using the training set
-
-    x_train = Variable(torch.from_numpy(train_x), requires_grad=False).type(dtype_float)
-    y_pred_train = model.forward(x_train).data.numpy().flatten()
-    print "y_pred_train before transform is", y_pred_train
-    transform_elements(y_pred_train)
-    print "y_pred_train after transform is ", y_pred_train
+    # y_pred_train = model.forward(x_train).data.numpy().flatten()
+    # print "y_pred_train before transform is", y_pred_train
+    # transform_elements(y_pred_train)
+    # print "y_pred_train after transform is ", y_pred_train
 
     #print "train_y is ", train_y
 
-    print "Performance on Training Set", np.mean(y_pred_train == train_y)
+    train_perf = evaluate_logreg_model(model, x_train, train_y)
+    print "Performance on Training Set", train_perf #np.mean(y_pred_train == train_y)
+
+    # Make predictions using the Validation set
+    # y_pred_valid = model.forward(x_train).data.numpy().flatten()
+    # transform_elements(y_pred_valid)
+    valid_perf = evaluate_logreg_model(model, x_valid, valid_y)
+    print "Performance on Validation Set", valid_perf
 
     # Make predictions using test set
-    x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
-    y_pred_test = model.forward(x_test).data.numpy().flatten()
-    print "y_pred_test before transform is", y_pred_test
-    transform_elements(y_pred_test)
-    print "y_pred_test after transform is ", y_pred_test
+    # y_pred_test = model.forward(x_test).data.numpy().flatten()
+    # transform_elements(y_pred_test)
+    # print "y_pred_test before transform is", y_pred_test
+    # transform_elements(y_pred_test)
+    # print "y_pred_test after transform is ", y_pred_test
 
     #print "test_y is ", test_y
 
-    print "Performance on Test Set", np.mean(y_pred_test == test_y)
+    test_perf = evaluate_logreg_model(model, x_test, test_y)
+    print "Performance on Test Set", test_perf
 
-    return model
+    return model, {
+        'train': performance_data_training,
+        'valid': performance_data_valid,
+        'test': performance_data_test,
+    }
+
+
+def optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict):
+    models = []
+    max_valid_perf = []
+    step = 0.5
+    for i in range(21):
+        reg_lambda = i * step
+        model, perf = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, reg_lambda)
+        models.append(model)
+        max_valid_perf.append(perf['valid'][-1])
+
+    max_perf = max(enumerate(max_valid_perf), key=lambda x: x[1])[0]
+    return models[max_perf], max_perf * step
 
 ########################### Part 7 ############################
 
@@ -590,9 +568,9 @@ def get_test_decision_tree(real_training, fake_training, real_test, fake_test, u
     return batch_xs, batch_y_s
 
 def part7(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, max_depth):
-    train_x, train_y = get_train_decision_tree(real_training, fake_training, unique_words_dict)
-    valid_x, valid_y = get_validation_decision_tree(real_training, fake_training, real_test, fake_test, unique_words_dict)
-    test_x, test_y = get_test_decision_tree(real_training, fake_training, real_test, fake_test, unique_words_dict)
+    train_x, train_y = vectorize_headlines(real_training, fake_training, unique_words_dict)
+    valid_x, valid_y = vectorize_headlines(real_validation, fake_validation, unique_words_dict)
+    test_x, test_y = vectorize_headlines(real_test, fake_test, unique_words_dict)
 
     # Uses the Gini Impure index
     clf_gini = DecisionTreeClassifier(criterion = "gini", max_depth=max_depth, random_state = 100, min_samples_leaf=5)
@@ -681,21 +659,16 @@ if __name__ == '__main__':
     #     json.dump(fake_counts, fake_word_counts)
 
     ############################ Part 4 ################################
-
-    # dictionary_unique_words = process_headlines(real_training, fake_training)
-    # pickle.dump(dictionary_unique_words, open("Part4Dictionary.pkl", 'wb'))
-    #unique_words_dict = pickle.load(open("Part4Dictionary.pkl"))
-
-    # print "Fetching Wordlist"
-    #
     wordlist = get_wordlist(real_training, fake_training)
 
     unique_words_dict = {
         wordlist[i]: i for i in range(len(wordlist))
     }
-    #
-    # print "Training model"
-    # model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+
+    #model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+    # plot_learning_curve(performance_data)
+
+    model, l2_lambda = optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
 
 
     ############################## Part 7 ##############################
