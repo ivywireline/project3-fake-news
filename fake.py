@@ -482,14 +482,120 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
 
     return model
 
+########################### Part 7 ############################
+
+def get_train_decision_tree(real_training, fake_training, unique_words_dict):
+    # 1 means real. 0 means fake.
+    unique_words_set = get_wordlist(real_training, fake_training)
+    unique_words_number = len(unique_words_set)
+
+    # Number of features is the number of the unique words in the training set
+    batch_xs = []
+    # There are only 2 classes - real or fake
+    batch_y_s = [1 for _ in xrange(len(real_training))] + [0 for _ in xrange(len(fake_training))]
+
+    for headline in real_training:
+        # Vector simulating the headline
+        vector_headline = np.zeros(unique_words_number)
+        headline_words = headline.split(" ")
+        for word in set(headline_words):
+            index = unique_words_dict[word]
+            vector_headline[index] = 1
+        # batch_xs = np.vstack((batch_xs, vector_headline))
+        batch_xs.append(vector_headline)
+
+    for headline in fake_training:
+        # Vector simulating the headline
+        vector_headline = np.zeros(unique_words_number)
+        headline_words = headline.split(" ")
+        for word in set(headline_words):
+            index = unique_words_dict[word]
+            vector_headline[index] = 1
+        # batch_xs = np.vstack((batch_xs, vector_headline))
+        batch_xs.append(vector_headline)
+
+    batch_xs = np.vstack(batch_xs)
+
+    return batch_xs, batch_y_s
+
+
+def get_validation_decision_tree(real_training, fake_training, real_validation, fake_validation, unique_words_dict):
+    # 1 means real. 0 means fake.
+    unique_words_set = get_wordlist(real_training, fake_training)
+    unique_words_number = len(unique_words_set)
+
+    # Number of features is the number of the unique words in the validation set
+    batch_xs = np.zeros((0, unique_words_number))
+    # There are only 2 classes - real or fake
+    batch_y_s = []
+
+    for headline in real_validation:
+        # Vector simulating the headline
+        vector_headline = np.zeros(unique_words_number)
+        headline_words = headline.split(" ")
+        for word in headline_words:
+            if word in unique_words_dict:
+                index = unique_words_dict[word]
+                vector_headline[index] = 1
+        batch_xs = np.vstack((batch_xs, vector_headline))
+        batch_y_s.append(1)
+
+    for headline in fake_validation:
+        # Vector simulating the headline
+        vector_headline = np.zeros(unique_words_number)
+        headline_words = headline.split(" ")
+        for word in headline_words:
+            if word in unique_words_dict:
+                index = unique_words_dict[word]
+                vector_headline[index] = 0
+        batch_xs = np.vstack((batch_xs, vector_headline))
+        batch_y_s.append(0)
+
+    return batch_xs, batch_y_s
+
+
+def get_test_decision_tree(real_training, fake_training, real_test, fake_test, unique_words_dict):
+    # 1 means real. 0 means fake.
+    unique_words_set = get_wordlist(real_training, fake_training)
+    unique_words_number = len(unique_words_set)
+
+    # Number of features is the number of the unique words in the validation set
+    batch_xs = np.zeros((0, unique_words_number))
+    # There are only 2 classes - real or fake
+    batch_y_s = []
+
+    for headline in real_test:
+        # Vector simulating the headline
+        vector_headline = np.zeros(unique_words_number)
+        headline_words = headline.split(" ")
+        for word in headline_words:
+            if word in unique_words_dict:
+                index = unique_words_dict[word]
+                vector_headline[index] = 1
+        batch_xs = np.vstack((batch_xs, vector_headline))
+        batch_y_s.append(1)
+
+
+    for headline in fake_test:
+        # Vector simulating the headline
+        vector_headline = np.zeros(unique_words_number)
+        headline_words = headline.split(" ")
+        for word in headline_words:
+            if word in unique_words_dict:
+                index = unique_words_dict[word]
+                vector_headline[index] = 0
+        batch_xs = np.vstack((batch_xs, vector_headline))
+        batch_y_s.append(0)
+
+    return batch_xs, batch_y_s
 
 def part7(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, max_depth):
-    train_x, train_y = get_train(real_training, fake_training, unique_words_dict)
-    valid_x, valid_y = get_validation(real_training, fake_training, real_test, fake_test, unique_words_dict)
-    test_x, test_y = get_test(real_training, fake_training, real_test, fake_test, unique_words_dict)
+    train_x, train_y = get_train_decision_tree(real_training, fake_training, unique_words_dict)
+    valid_x, valid_y = get_validation_decision_tree(real_training, fake_training, real_test, fake_test, unique_words_dict)
+    test_x, test_y = get_test_decision_tree(real_training, fake_training, real_test, fake_test, unique_words_dict)
 
     # Uses the Gini Impure index
-    clf_gini = DecisionTreeClassifier(criterion = "gini", max_depth=max_depth)
+    clf_gini = DecisionTreeClassifier(criterion = "gini", max_depth=max_depth, random_state = 100, min_samples_leaf=5)
     clf_gini = clf_gini.fit(train_x, train_y)
     y_pred_train_gini = clf_gini.predict(train_x)
     score_train_gini = accuracy_score(train_y, y_pred_train_gini)
@@ -497,8 +603,11 @@ def part7(real_training, fake_training, real_validation, fake_validation, real_t
     y_pred_valid_gini = clf_gini.predict(valid_x)
     score_valid_gini = accuracy_score(valid_y, y_pred_valid_gini)
 
+    y_pred_test_gini = clf_gini.predict(test_x)
+    score_test_gini = accuracy_score(test_y, y_pred_test_gini)
+
     # Use the criterion information gain
-    clf_entropy = DecisionTreeClassifier(criterion = "entropy", max_depth=max_depth)
+    clf_entropy = DecisionTreeClassifier(criterion = "entropy", max_depth=max_depth, random_state = 100, min_samples_leaf=5)
     clf_entropy = clf_entropy.fit(train_x, train_y)
     y_pred_train_entropy = clf_entropy.predict(train_x)
     score_train_entropy = accuracy_score(train_y, y_pred_train_entropy)
@@ -506,7 +615,14 @@ def part7(real_training, fake_training, real_validation, fake_validation, real_t
     y_pred_valid_entropy = clf_entropy.predict(valid_x)
     score_valid_entropy = accuracy_score(valid_y, y_pred_valid_entropy)
 
-    return score_train_gini, score_valid_gini, score_train_entropy, score_valid_entropy
+    y_pred_test_entropy = clf_entropy.predict(test_x)
+    score_test_entropy = accuracy_score(test_y, y_pred_test_entropy)
+
+    return score_train_gini, score_valid_gini, score_test_gini, score_train_entropy, score_valid_entropy, score_test_entropy
+
+
+def part7_plot(depth_values, ):
+
 
 
 if __name__ == '__main__':
@@ -583,11 +699,22 @@ if __name__ == '__main__':
 
 
     ############################## Part 7 ##############################
-    max_depth = 10
-    score_train_gini, score_valid_gini, score_train_entropy, score_valid_entropy = part7(real_training, fake_training, real_validation,
-        fake_validation, real_test, fake_test, unique_words_dict, max_depth)
+    depth_values = [1, 2, 3, 4, 5, 6, 7, 10, 15, 20]
+    score_valid_values = []
+    score_test_values = []
 
-    print "score_train_gini is ", score_train_gini
-    print "score_valid_gini is ", score_valid_gini
-    print "score_train_entropy is ", score_train_entropy
-    print "score_valid_entropy is ", score_valid_entropy
+    for max_depth in depth_values:
+        score_train_gini, score_valid_gini, score_test_gini, score_train_entropy, score_valid_entropy, score_test_entropy = part7(real_training, fake_training, real_validation,
+            fake_validation, real_test, fake_test, unique_words_dict, max_depth)
+        print "##################################################################"
+        print "max_depth is ", max_depth
+        print "score_train_gini is ", score_train_gini
+        print "score_valid_gini is ", score_valid_gini
+        print "score_test_gini is ", score_valid_gini
+        print "score_train_entropy is ", score_train_entropy
+        print "score_valid_entropy is ", score_valid_entropy
+        print "score_test_entropy is ", score_valid_entropy
+        score_valid_values.append(score_valid_entropy)
+        score_test_values.append(score_test_entropy)
+
+    part7_plot(depth_values, score_valid_entropy, score_test_entropy)
