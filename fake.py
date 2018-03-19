@@ -226,7 +226,7 @@ def get_total_performance(model, real_training, fake_training, real_test, fake_t
 
 ############################# Part 3 ####################################
 
-def get_top_bottom_word_occurrences(model, stop_words=list()):
+def get_top_bottom_word_weights(model, stop_words=list()):
     prob_real = float(model.num_real) / (model.num_real + model.num_fake)
     prob_fake = float(model.num_fake) / (model.num_real + model.num_fake)
 
@@ -376,7 +376,7 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     # Softmax is internally computed.
     # Set parameters to be updated.
     loss_fn = torch.nn.BCELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=reg_lambda)
 
     x_train = Variable(torch.from_numpy(train_x), requires_grad=False).type(dtype_float)
     y_train = Variable(torch.from_numpy(np.vstack(train_y)), requires_grad=False).type(dtype_float)
@@ -392,12 +392,12 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     for i in range(num_iters):
         # Forward + Backward + Optimize
         y_pred = model(x_train)
-        loss = loss_fn.forward(y_pred, y_train)
 
-        l2_reg = sum([W.norm(2) for W in model.parameters()])
+        #l2_reg = sum([torch.pow(W, 2).sum() * 0.5 for W in model.parameters()])
 
         optimizer.zero_grad()
-        loss = loss_fn.forward(y_pred, y_train) + l2_reg * reg_lambda
+        loss = loss_fn.forward(y_pred, y_train)
+        # loss = loss_fn.forward(y_pred, y_train) + l2_reg * reg_lambda
 
         loss.backward()
         optimizer.step()
@@ -450,8 +450,8 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
 def optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict):
     models = []
     max_valid_perf = []
-    step = 0.5
-    for i in range(21):
+    step = 0.001
+    for i in range(11):
         reg_lambda = i * step
         model, perf = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, reg_lambda)
         models.append(model)
@@ -459,6 +459,18 @@ def optimL2_lambda(real_training, fake_training, real_validation, fake_validatio
 
     max_perf = max(enumerate(max_valid_perf), key=lambda x: x[1])[0]
     return models[max_perf], max_perf * step
+
+
+def get_top_bottom_word_weights_logreg(model, word_list, stop_words=list()):
+    weights = model.parameters().next().data.numpy()[0]
+    weights_sorted_idx = sorted(range(len(weights)), key=weights.__getitem__)
+
+    words_sorted = [word_list[i] for i in weights_sorted_idx if word_list[i] not in stop_words]
+
+    words_top10_pos = words_sorted[:-11:-1]
+    words_top10_neg = words_sorted[:10]
+
+    return words_top10_pos, words_top10_neg
 
 ########################### Part 7 ############################
 
@@ -548,8 +560,8 @@ if __name__ == '__main__':
     # #
     # # # print tune_model(real_training, fake_training, real_validation, fake_validation)
     # #
-    # topbottom = get_top_bottom_word_occurrences(model)
-    # topbottom_stop = get_top_bottom_word_occurrences(model, ENGLISH_STOP_WORDS)
+    # topbottom = get_top_bottom_word_weights(model)
+    # topbottom_stop = get_top_bottom_word_weights(model, ENGLISH_STOP_WORDS)
     #
     # for items in topbottom:
     #     print "\\begin{enumerate}"
@@ -579,11 +591,27 @@ if __name__ == '__main__':
     unique_words_dict = {
         wordlist[i]: i for i in range(len(wordlist))
     }
-    #
-    # #model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
-    # # plot_learning_curve(performance_data)
-    #
-    # model, l2_lambda = optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+
+    l2_lambda = 0.007
+    model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, l2_lambda)
+    plot_learning_curve(performance_data)
+    logreg_stats = get_top_bottom_word_weights_logreg(model, wordlist)
+    logreg_stats_stop = get_top_bottom_word_weights_logreg(model, wordlist, ENGLISH_STOP_WORDS)
+
+    for items in logreg_stats:
+        print "\\begin{enumerate}"
+        for i in items:
+            print "\t\\item {}".format(i)
+        print "\\end{enumerate}"
+
+    for items in logreg_stats_stop:
+        print "\\begin{enumerate}"
+        for i in items:
+            print "\t\\item {}".format(i)
+        print "\\end{enumerate}"
+
+    #model, l2_lambda = optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+    # l2_lambda found is 0.007
 
 
     ############################## Part 7 ##############################

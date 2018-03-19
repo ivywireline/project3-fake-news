@@ -323,11 +323,72 @@ def get_performance(model, real, fake):
 	\end{figure}
 	
 	% talk about how you chose the regularization parameter
+	We used L2 regularization to prevent overfitting.
+	We chose the $\lambda$ value by training the model on the training set with varying $\lambda$ values, and choosing the value that had the highest performance on the validation set.
+	The value that seemed to perform the best was 0.007.
+	
+	When searching for the $\lambda$ value, we started off with small values and a small step size.
+	This is because our performance on the validation set without L2 regularization was already quite good, and an excessively large lambda value would penalize the data too much.
+	
 	\item %5
 	\item %6
 	\begin{enumerate}
 		\item %6a
-		\item %6b
+		The top positive words in the logistic regression model are as follows:
+		\begin{enumerate}
+			\item nfl
+			\item australia
+			\item ban
+			\item defends
+			\item over
+			\item week
+			\item appears
+			\item law
+			\item back
+			\item pence
+		\end{enumerate}
+		
+		The top negative words in the logistic regression model are as follows:
+		\begin{enumerate}
+			\item this
+			\item reason
+			\item paid
+			\item hillary
+			\item have
+			\item it
+			\item 5
+			\item votes
+			\item are
+			\item need
+		\end{enumerate}
+		\item %6b	
+		The top positive words in the logistic regression model excluding stopwords are as follows:
+		\begin{enumerate}
+			\item nfl
+			\item australia
+			\item ban
+			\item defends
+			\item week
+			\item appears
+			\item law
+			\item pence
+			\item senate
+			\item push
+		\end{enumerate}
+		
+		The top negative words in the logistic regression model excluding stopwords are as follows:
+		\begin{enumerate}
+			\item reason
+			\item paid
+			\item hillary
+			\item 5
+			\item votes
+			\item need
+			\item goes
+			\item f
+			\item won
+			\item riots
+		\end{enumerate}
 		\item %6c
 	\end{enumerate}
 	\item %7
