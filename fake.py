@@ -278,112 +278,39 @@ def process_headlines(real_training, fake_training):
 
     return unique_words_dict
 
-
-def get_train(real_training, fake_training, unique_words_dict):
+def vectorize_headlines(real, fake, unique_words_dict):
     # 1 means real. 0 means fake.
-    unique_words_set = get_wordlist(real_training, fake_training)
+    unique_words_set = unique_words_dict.keys()
     unique_words_number = len(unique_words_set)
 
     # Number of features is the number of the unique words in the training set
     batch_xs = []
     # There are only 2 classes - real or fake
-    batch_y_s = [1 for _ in xrange(len(real_training))] + [0 for _ in xrange(len(fake_training))]
+    batch_y_s = [1 for _ in xrange(len(real))] + [0 for _ in xrange(len(fake))]
 
-    for headline in real_training:
+    for headline in real:
         # Vector simulating the headline
         vector_headline = np.zeros(unique_words_number)
         headline_words = headline.split(" ")
         for word in set(headline_words):
-            index = unique_words_dict[word]
-            vector_headline[index] = 1
-        # batch_xs = np.vstack((batch_xs, vector_headline))
+            if word in unique_words_dict:
+                index = unique_words_dict[word]
+                vector_headline[index] = 1
         batch_xs.append(vector_headline)
 
-    for headline in fake_training:
+    for headline in fake:
         # Vector simulating the headline
         vector_headline = np.zeros(unique_words_number)
         headline_words = headline.split(" ")
         for word in set(headline_words):
-            index = unique_words_dict[word]
-            vector_headline[index] = 1
-        # batch_xs = np.vstack((batch_xs, vector_headline))
+            if word in unique_words_dict:
+                index = unique_words_dict[word]
+                vector_headline[index] = 1
         batch_xs.append(vector_headline)
 
     batch_xs = np.vstack(batch_xs)
 
     return batch_xs, batch_y_s
-
-
-def get_validation(real_training, fake_training, real_validation, fake_validation, unique_words_dict):
-    # 1 means real. 0 means fake.
-    unique_words_set = get_wordlist(real_training, fake_training)
-    unique_words_number = len(unique_words_set)
-
-    # Number of features is the number of the unique words in the validation set
-    batch_xs = np.zeros((0, unique_words_number))
-    # There are only 2 classes - real or fake
-    batch_y_s = []
-
-    for headline in real_validation:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in headline_words:
-            if word in unique_words_dict:
-                index = unique_words_dict[word]
-                vector_headline[index] = 1
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(1)
-
-    for headline in fake_validation:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in headline_words:
-            if word in unique_words_dict:
-                index = unique_words_dict[word]
-                vector_headline[index] = 0
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(0)
-
-    return batch_xs, batch_y_s
-
-
-def get_test(real_training, fake_training, real_test, fake_test, unique_words_dict):
-    # 1 means real. 0 means fake.
-    unique_words_set = get_wordlist(real_training, fake_training)
-    unique_words_number = len(unique_words_set)
-
-    # Number of features is the number of the unique words in the validation set
-    batch_xs = np.zeros((0, unique_words_number))
-    # There are only 2 classes - real or fake
-    batch_y_s = []
-
-    for headline in real_test:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in headline_words:
-            if word in unique_words_dict:
-                index = unique_words_dict[word]
-                vector_headline[index] = 1
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(1)
-
-
-    for headline in fake_test:
-        # Vector simulating the headline
-        vector_headline = np.zeros(unique_words_number)
-        headline_words = headline.split(" ")
-        for word in headline_words:
-            if word in unique_words_dict:
-                index = unique_words_dict[word]
-                vector_headline[index] = 0
-        batch_xs = np.vstack((batch_xs, vector_headline))
-        batch_y_s.append(0)
-
-    return batch_xs, batch_y_s
-
 
 def transform_elements(lst):
     for i in range(len(lst)):
@@ -397,9 +324,9 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
     # 1 means real. 0 means fake.
     unique_words_number = len(unique_words_dict)
 
-    train_x, train_y = get_train(real_training, fake_training, unique_words_dict)
-    #valid_x, valid_y = get_validation(real_training, fake_training, real_test, fake_test, unique_words_dict)
-    test_x, test_y = get_test(real_training, fake_training, real_test, fake_test, unique_words_dict)
+    train_x, train_y = vectorize_headlines(real_training, fake_training, unique_words_dict)
+    valid_x, valid_y = vectorize_headlines(real_validation, fake_validation, unique_words_dict)
+    test_x, test_y = vectorize_headlines(real_test, fake_test, unique_words_dict)
 
     dtype_float = torch.FloatTensor
     dtype_long = torch.LongTensor
@@ -484,9 +411,9 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
 
 
 def part7(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, max_depth):
-    train_x, train_y = get_train(real_training, fake_training, unique_words_dict)
-    valid_x, valid_y = get_validation(real_training, fake_training, real_test, fake_test, unique_words_dict)
-    test_x, test_y = get_test(real_training, fake_training, real_test, fake_test, unique_words_dict)
+    train_x, train_y = vectorize_headlines(real_training, fake_training, unique_words_dict)
+    valid_x, valid_y = vectorize_headlines(real_validation, fake_validation, unique_words_dict)
+    test_x, test_y = vectorize_headlines(real_test, fake_test, unique_words_dict)
 
     # Uses the Gini Impure index
     clf_gini = DecisionTreeClassifier(criterion = "gini", max_depth=max_depth)
@@ -579,13 +506,13 @@ if __name__ == '__main__':
     }
     #
     # print "Training model"
-    # model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
+    model = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
 
 
     ############################## Part 7 ##############################
     max_depth = 10
     score_train_gini, score_valid_gini, score_train_entropy, score_valid_entropy = part7(real_training, fake_training, real_validation,
-        fake_validation, real_test, fake_test, unique_words_dict, max_depth)
+                                                                                         fake_validation, real_test, fake_test, unique_words_dict, max_depth)
 
     print "score_train_gini is ", score_train_gini
     print "score_valid_gini is ", score_valid_gini
