@@ -23,6 +23,9 @@ real_filename = 'clean_real.txt'
 fake_filename = 'clean_fake.txt'
 
 
+print_verbose = True
+
+
 class NaiveBayesModel:
     def __init__(self, **kwargs):
         self.probs_real = kwargs.pop('probs_real', None)
@@ -135,7 +138,6 @@ def predict_model(model, headline):
     fake_class_prob = float(fake_count) / (real_count + fake_count)
     headline_split = headline.split(' ')
     for word in word_list:
-        # if word in ENGLISH_STOP_WORDS: continue
         if word in headline_split:
             logprob_real += math.log(probabilities_real[word])
             logprob_fake += math.log(probabilities_fake[word])
@@ -144,7 +146,6 @@ def predict_model(model, headline):
             logprob_fake += math.log(1 - probabilities_fake[word])
     real_prob = math.exp(logprob_real) * real_class_prob
     fake_prob = math.exp(logprob_fake) * fake_class_prob
-    # print real_prob, fake_prob
     return real_prob > fake_prob
 
 
@@ -156,6 +157,8 @@ def tune_model(real_training, fake_training, real_validation, fake_validation):
         while p <= 1:
             model = train_model(real_training, fake_training, m, p)
             performance = get_performance(model, real_validation, fake_validation)
+            if print_verbose:
+                print m, p, performance
             performance_report[(m, p)] = performance
             p += 0.1
         m += 1
@@ -394,17 +397,14 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
         # Forward + Backward + Optimize
         y_pred = model(x_train)
 
-        #l2_reg = sum([torch.pow(W, 2).sum() * 0.5 for W in model.parameters()])
-
         optimizer.zero_grad()
         loss = loss_fn.forward(y_pred, y_train)
-        # loss = loss_fn.forward(y_pred, y_train) + l2_reg * reg_lambda
 
         loss.backward()
         optimizer.step()
 
-        print ('Epoch: [%d/%d], Loss: %.4f'
-               % (i+1, num_iters, loss.data[0]))
+        if print_verbose:
+            print ('Epoch: [%d/%d], Loss: %.4f' % (i+1, num_iters, loss.data[0]))
 
         # evaluate model
         performance_data_training.append(evaluate_logreg_model(model, x_train, train_y))
@@ -413,31 +413,14 @@ def part4(real_training, fake_training, real_validation, fake_validation, real_t
 
 
     # Make predictions using the training set
-    # y_pred_train = model.forward(x_train).data.numpy().flatten()
-    # print "y_pred_train before transform is", y_pred_train
-    # transform_elements(y_pred_train)
-    # print "y_pred_train after transform is ", y_pred_train
-
-    #print "train_y is ", train_y
-
     train_perf = evaluate_logreg_model(model, x_train, train_y)
-    print "Performance on Training Set", train_perf #np.mean(y_pred_train == train_y)
+    print "Performance on Training Set", train_perf
 
     # Make predictions using the Validation set
-    # y_pred_valid = model.forward(x_train).data.numpy().flatten()
-    # transform_elements(y_pred_valid)
     valid_perf = evaluate_logreg_model(model, x_valid, valid_y)
     print "Performance on Validation Set", valid_perf
 
     # Make predictions using test set
-    # y_pred_test = model.forward(x_test).data.numpy().flatten()
-    # transform_elements(y_pred_test)
-    # print "y_pred_test before transform is", y_pred_test
-    # transform_elements(y_pred_test)
-    # print "y_pred_test after transform is ", y_pred_test
-
-    #print "test_y is ", test_y
-
     test_perf = evaluate_logreg_model(model, x_test, test_y)
     print "Performance on Test Set", test_perf
 
@@ -483,8 +466,6 @@ def format_list_as_tex(stats):
 
 
 ########################### Part 7 ############################
-
-
 def part7(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, max_depth):
     train_x, train_y = vectorize_headlines(real_training, fake_training, unique_words_dict)
     valid_x, valid_y = vectorize_headlines(real_validation, fake_validation, unique_words_dict)
@@ -544,23 +525,20 @@ if __name__ == '__main__':
     real_training, real_validation, real_test = load_headlines(real_filename)
     fake_training, fake_validation, fake_test = load_headlines(fake_filename)
 
-    ############## Part 2 ###############################
+    ################ Part 2 ##############################
+    print "Finding optimal m and p value for Naive Bayes model"
+    # performance_report = tune_model(real_training, fake_training, real_validation, fake_validation)
+    # m, p = max(performance_report, key=performance_report.get)
+    # print "The optimal m and p value is", (m, p)
 
-    # # performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total = get_total_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation)
+    m = 2
+    p = 0.2
 
-    process_headlines(real_training, fake_training)
-
-    performance_report = tune_model(real_training, fake_training, real_validation, fake_validation)
-    m, p = max(performance_report, key=performance_report.get)
-    print "The m and p value is", (m, p)
-
-    # Uncomment the following to use the optimal m and p values found earlier.
-    # m = 2
-    # p = 0.2
-
+    print "Training the naive bayes model"
     model = train_model(real_training, fake_training, m, p)
     print get_performance(model, real_validation, fake_validation)
 
+    print "Getting the top and bottom words"
     topbottom = get_top_bottom_word_weights(model)
     topbottom_stop = get_top_bottom_word_weights(model, ENGLISH_STOP_WORDS)
 
@@ -575,11 +553,11 @@ if __name__ == '__main__':
 
     unique_words_dict = {wordlist[i]: i for i in range(len(wordlist))}
 
-    model, l2_lambda = optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test,
-                                      fake_test, unique_words_dict)
+    # model, l2_lambda = optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test,
+    #                                   fake_test, unique_words_dict)
 
     # Uncomment the following to use the optimal lambda value
-    # l2_lambda = 0.007
+    l2_lambda = 0.007
 
     model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test,
                                     fake_test, unique_words_dict, l2_lambda)
