@@ -581,7 +581,8 @@ if __name__ == '__main__':
     # Uncomment the following to use the optimal lambda value
     # l2_lambda = 0.007
 
-    model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, l2_lambda)
+    model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test,
+                                    fake_test, unique_words_dict, l2_lambda)
     plot_learning_curve(performance_data)
     logreg_stats = get_top_bottom_word_weights_logreg(model, wordlist)
     logreg_stats_stop = get_top_bottom_word_weights_logreg(model, wordlist, ENGLISH_STOP_WORDS)
@@ -594,34 +595,50 @@ if __name__ == '__main__':
 
 
     ############################## Part 7 ##############################
-    # depth_values = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-    # score_train_values = []
-    # score_valid_values = []
-    # score_test_values = []
-    #
-    # for max_depth in depth_values:
-    #     score_train_gini, score_valid_gini, score_test_gini, score_train_entropy, score_valid_entropy, score_test_entropy, clf_entropy = part7(real_training, fake_training, real_validation,
-    #         fake_validation, real_test, fake_test, unique_words_dict, max_depth)
-    #     print "##################################################################"
-    #     print "max_depth is ", max_depth
-    #     print "score_train_gini is ", score_train_gini
-    #     print "score_valid_gini is ", score_valid_gini
-    #     print "score_test_gini is ", score_valid_gini
-    #     print "score_train_entropy is ", score_train_entropy
-    #     print "score_valid_entropy is ", score_valid_entropy
-    #     print "score_test_entropy is ", score_valid_entropy
-    #     score_train_values.append(score_train_entropy)
-    #     score_valid_values.append(score_valid_entropy)
-    #     score_test_values.append(score_test_entropy)
-    #
-    # plot_learning_curve_part_7(depth_values, score_train_values, score_valid_values, score_test_values)
-    #
-    # score_train_gini, score_valid_gini, score_test_gini, score_train_entropy, score_valid_entropy, score_test_entropy, clf_entropy = part7(real_training, fake_training, real_validation,
-    #     fake_validation, real_test, fake_test, unique_words_dict, 25)
-    #
-    # dot_data = tree.export_graphviz(clf_entropy, out_file=None)
-    # graph = graphviz.Source(dot_data)
-    # graph.render("part7b")
+    depth_values = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+    score_train_values = []
+    score_valid_values = []
+    score_test_values = []
+
+    for max_depth in depth_values:
+        (
+            score_train_gini,
+            score_valid_gini,
+            score_test_gini,
+            score_train_entropy,
+            score_valid_entropy,
+            score_test_entropy,
+            clf_entropy,
+        ) = part7(real_training, fake_training, real_validation, fake_validation, real_test, fake_test,
+                  unique_words_dict, max_depth)
+        print "##################################################################"
+        print "max_depth is ", max_depth
+        print "score_train_gini is ", score_train_gini
+        print "score_valid_gini is ", score_valid_gini
+        print "score_test_gini is ", score_valid_gini
+        print "score_train_entropy is ", score_train_entropy
+        print "score_valid_entropy is ", score_valid_entropy
+        print "score_test_entropy is ", score_valid_entropy
+        score_train_values.append(score_train_entropy)
+        score_valid_values.append(score_valid_entropy)
+        score_test_values.append(score_test_entropy)
+
+    plot_learning_curve_part_7(depth_values, score_train_values, score_valid_values, score_test_values)
+
+    (
+        score_train_gini,
+        score_valid_gini,
+        score_test_gini,
+        score_train_entropy,
+        score_valid_entropy,
+        score_test_entropy,
+        clf_entropy,
+    ) = part7(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict,
+              25)
+
+    dot_data = tree.export_graphviz(clf_entropy, out_file=None)
+    graph = graphviz.Source(dot_data)
+    graph.render("part7b")
 
     important_words = []
     important_words.append(wordlist[1332])
