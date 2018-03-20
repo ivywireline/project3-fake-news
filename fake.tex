@@ -404,6 +404,17 @@ def get_performance(model, real, fake):
 		The similarities are the same as in 6(a).
 		There seem to be some additional synonyms that correspond (e.g. ``votes'' vs. ``vote''), but not additional exact matches.
 		\item %6c
+		It might not be the best idea to read the logistic regression parameters directly because logistic regression does not require normalized input.
+		If there was a value that was abnormally high or low in the training set, the weight corresponding to that value would be small to compensate.
+		That value could be quite significant, but since the data is not normalized, those weights would be lower than one would expect.
+		This is not a concern in our case since our data sets are all normalized (the only values the features could take are 0 and 1).
+		%because if they're not normalized because this would not be representative of words whose combination is stronger than the word individually.
+		%Due to this, headlines in the training set with large amounts of words would influence the weights in a way so that words in combination would be strong, but the words individually may not be as strong.
+		%This is not an issue in our case, since our headlines tend to be of similar length.
+		%Furthermore, since Logistic regression assumes that 
+		\[
+			\log\frac{p(\text{true}|x,\theta)}{p(\text{fake}|x,\theta)} = \theta_0 + \theta_1x_1 + ... + \theta_dx_d
+		\]
 	\end{enumerate}
 	\item %7
 	\begin{enumerate}
