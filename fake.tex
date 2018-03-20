@@ -411,7 +411,7 @@ def get_performance(model, real, fake):
 		%because if they're not normalized because this would not be representative of words whose combination is stronger than the word individually.
 		%Due to this, headlines in the training set with large amounts of words would influence the weights in a way so that words in combination would be strong, but the words individually may not be as strong.
 		%This is not an issue in our case, since our headlines tend to be of similar length.
-		%Furthermore, since Logistic regression assumes that 
+		%Furthermore, since Logistic regression assumes that
 		\[
 			\log\frac{p(\text{true}|x,\theta)}{p(\text{fake}|x,\theta)} = \theta_0 + \theta_1x_1 + ... + \theta_dx_d
 		\]
@@ -512,7 +512,17 @@ def get_performance(model, real, fake):
 	\item %8
 	\begin{enumerate}
 		\item %8a
+
+		$I(Y, x_{1}) = H(Y) - \sum_{k}{P(X=x_{k})H(Y|X=x_{k})}
+		             = 0.97 - ((.67)(0.999) + (0.33)(0.747))
+		             = 0.054$
+		Thus the mutual information of the first split is 0.054.
+
 		\item %8b
+		$I(Y, x_{2}) = H(Y) - \sum_{k}{P(X=x_{k})H(Y|X=x_{k})}
+		             = 0.999 - ((.93)(0.999) + (0.07)(0.14))
+		             = 0.06$
+	    I chose the first child of the first split as the variable for this question. The mutual information on this variable is slightly larger than the first split. This indicates that the this variable tells us more information about whether the headline is real or fake than the first headline.
 	\end{enumerate}
 	\end{enumerate}
 \end{document}
