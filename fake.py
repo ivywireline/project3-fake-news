@@ -17,7 +17,9 @@ from sklearn.cross_validation import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
 from sklearn import tree
-import graphviz
+
+# Uncomment the following line after installing GraphViz if need to generate part 7 visualization
+# import graphviz
 
 real_filename = 'clean_real.txt'
 fake_filename = 'clean_fake.txt'
@@ -614,9 +616,10 @@ if __name__ == '__main__':
     ) = part7(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict,
               25)
 
-    dot_data = tree.export_graphviz(clf_entropy, out_file=None)
-    graph = graphviz.Source(dot_data)
-    graph.render("part7b")
+    # Uncomment the following if GraphViz is installed, and we want to regenerate the graphs
+    # dot_data = tree.export_graphviz(clf_entropy, out_file=None)
+    # graph = graphviz.Source(dot_data)
+    # graph.render("part7b")
 
     important_words = []
     important_words.append(wordlist[1332])
