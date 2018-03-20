@@ -529,12 +529,14 @@ if __name__ == '__main__':
 
     ################ Part 2 ##############################
     print "Finding optimal m and p value for Naive Bayes model"
-    # performance_report = tune_model(real_training, fake_training, real_validation, fake_validation)
-    # m, p = max(performance_report, key=performance_report.get)
-    # print "The optimal m and p value is", (m, p)
 
     m = 2
     p = 0.2
+
+    # Uncomment the following to tune the model
+    # performance_report = tune_model(real_training, fake_training, real_validation, fake_validation)
+    # m, p = max(performance_report, key=performance_report.get)
+    # print "The optimal m and p value is", (m, p)
 
     print "Training the naive bayes model"
     model = train_model(real_training, fake_training, m, p)
@@ -555,11 +557,11 @@ if __name__ == '__main__':
 
     unique_words_dict = {wordlist[i]: i for i in range(len(wordlist))}
 
+    l2_lambda = 0.007
+
+    # Uncomment the following to tune the model
     # model, l2_lambda = optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test,
     #                                   fake_test, unique_words_dict)
-
-    # Uncomment the following to use the optimal lambda value
-    l2_lambda = 0.007
 
     model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test,
                                     fake_test, unique_words_dict, l2_lambda)
