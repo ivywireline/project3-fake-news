@@ -413,7 +413,7 @@ def get_performance(model, real, fake):
 		%This is not an issue in our case, since our headlines tend to be of similar length.
 		%Furthermore, since Logistic regression assumes that
 		\[
-			\log\frac{p(\text{true}|x,\theta)}{p(\text{fake}|x,\theta)} = \theta_0 + \theta_1x_1 + ... + \theta_dx_d
+			\log\frac{p(\text{real}|x,\theta)}{p(\text{fake}|x,\theta)} = \theta_0 + \theta_1x_1 + ... + \theta_dx_d
 		\]
 	\end{enumerate}
 	\item %7

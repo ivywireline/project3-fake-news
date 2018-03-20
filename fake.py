@@ -22,9 +22,6 @@ import graphviz
 real_filename = 'clean_real.txt'
 fake_filename = 'clean_fake.txt'
 
-# Key is a unique word string. Value is the index of the word in unique_words_set
-# unique_words_dict = {}
-
 
 class NaiveBayesModel:
     def __init__(self, **kwargs):
@@ -150,6 +147,7 @@ def predict_model(model, headline):
     # print real_prob, fake_prob
     return real_prob > fake_prob
 
+
 def tune_model(real_training, fake_training, real_validation, fake_validation):
     performance_report = {}
     m = 1
@@ -158,14 +156,12 @@ def tune_model(real_training, fake_training, real_validation, fake_validation):
         while p <= 1:
             model = train_model(real_training, fake_training, m, p)
             performance = get_performance(model, real_validation, fake_validation)
-            print m, p, performance
             performance_report[(m, p)] = performance
             p += 0.1
         m += 1
 
-    print "The m and p value is", max(performance_report, key=performance_report.get)
-
     return performance_report
+
 
 def get_performance(model, real, fake):
     correct = 0
@@ -179,6 +175,7 @@ def get_performance(model, real, fake):
             correct += 1
 
     return float(correct) / (len(real) + len(fake))
+
 
 def get_total_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation):
     accurate_count_training = 0
@@ -227,6 +224,7 @@ def get_total_performance(model, real_training, fake_training, real_test, fake_t
 
 ############################# Part 3 ####################################
 
+
 def get_top_bottom_word_weights(model, stop_words=list()):
     prob_real = float(model.num_real) / (model.num_real + model.num_fake)
     prob_fake = float(model.num_fake) / (model.num_real + model.num_fake)
@@ -268,6 +266,8 @@ def get_top_bottom_word_weights(model, stop_words=list()):
 ############################# Logistic Regression #############################
 def process_headlines(real_training, fake_training):
     # Get the unique words list. Its index is important for feature vector representation.
+    # Key is a unique word string. Value is the index of the word in unique_words_set
+
     unique_words_set = get_wordlist(real_training, fake_training)
     unique_words_number = len(unique_words_set)
     idx = 0
@@ -473,6 +473,15 @@ def get_top_bottom_word_weights_logreg(model, word_list, stop_words=list()):
 
     return words_top10_pos, words_top10_neg
 
+
+def format_list_as_tex(stats):
+    for items in stats:
+        print "\\begin{enumerate}"
+        for i in items:
+            print "\t\\item {}".format(i)
+        print "\\end{enumerate}"
+
+
 ########################### Part 7 ############################
 
 
@@ -535,82 +544,53 @@ if __name__ == '__main__':
     real_training, real_validation, real_test = load_headlines(real_filename)
     fake_training, fake_validation, fake_test = load_headlines(fake_filename)
 
-    # # These parameters need lots of tweaking
-    # m = 1.0
-    # p = 1.0
-    #
-    # model = train_model(real_training, fake_training, m, p)
-    #
+    ############## Part 2 ###############################
+
     # # performance_training, performance_test, performance_validation_real, performance_validation_fake, performance_validation_total = get_total_performance(model, real_training, fake_training, real_test, fake_test, real_validation, fake_validation)
-    #
-    # # process_headlines(real_training, fake_training)
-    # # batch_xs, batch_y_s = get_train(real_training, fake_training)
-    #
-    # # print "batch_xs", batch_xs
-    # # print "batch_y_s", batch_y_s
-    #
+
+    process_headlines(real_training, fake_training)
+
+    performance_report = tune_model(real_training, fake_training, real_validation, fake_validation)
+    m, p = max(performance_report, key=performance_report.get)
+    print "The m and p value is", (m, p)
+
+    # Uncomment the following to use the optimal m and p values found earlier.
     # m = 2
     # p = 0.2
-    #
-    # model = train_model(real_training, fake_training, m, p)
-    # print get_performance(model, real_validation, fake_validation)
-    # #
-    # #
-    # #
-    # # # print tune_model(real_training, fake_training, real_validation, fake_validation)
-    # #
-    # topbottom = get_top_bottom_word_weights(model)
-    # topbottom_stop = get_top_bottom_word_weights(model, ENGLISH_STOP_WORDS)
-    #
-    # for items in topbottom:
-    #     print "\\begin{enumerate}"
-    #     for i in items:
-    #         print "\t\\item {}".format(i)
-    #     print "\\end{enumerate}"
-    #
-    # for items in topbottom_stop:
-    #     print "\\begin{enumerate}"
-    #     for i in items:
-    #         print "\t\\item {}".format(i)
-    #     print "\\end{enumerate}"
 
-    # high_fake = [a for a in fake_counts if a in real_counts and fake_counts[a] > 3 and fake_counts[a] > real_counts[a]]
+    model = train_model(real_training, fake_training, m, p)
+    print get_performance(model, real_validation, fake_validation)
 
-    # print high_fake
+    topbottom = get_top_bottom_word_weights(model)
+    topbottom_stop = get_top_bottom_word_weights(model, ENGLISH_STOP_WORDS)
 
-    # with open('real_word_counts.json', 'w') as real_word_counts:
-    #     json.dump(real_counts, real_word_counts)
+    print "Part 3(a):"
+    format_list_as_tex(topbottom)
 
-    # with open('fake_word_counts.json', 'w') as fake_word_counts:
-    #     json.dump(fake_counts, fake_word_counts)
+    print "Part 3(b):"
+    format_list_as_tex(topbottom_stop)
 
-    ############################ Part 4 ################################
+    ########################### Part 4 ################################
     wordlist = get_wordlist(real_training, fake_training)
 
-    unique_words_dict = {
-        wordlist[i]: i for i in range(len(wordlist))
-    }
+    unique_words_dict = {wordlist[i]: i for i in range(len(wordlist))}
 
+    model, l2_lambda = optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test,
+                                      fake_test, unique_words_dict)
+
+    # Uncomment the following to use the optimal lambda value
     # l2_lambda = 0.007
-    # model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, l2_lambda)
-    # plot_learning_curve(performance_data)
-    # logreg_stats = get_top_bottom_word_weights_logreg(model, wordlist)
-    # logreg_stats_stop = get_top_bottom_word_weights_logreg(model, wordlist, ENGLISH_STOP_WORDS)
-    #
-    # for items in logreg_stats:
-    #     print "\\begin{enumerate}"
-    #     for i in items:
-    #         print "\t\\item {}".format(i)
-    #     print "\\end{enumerate}"
-    #
-    # for items in logreg_stats_stop:
-    #     print "\\begin{enumerate}"
-    #     for i in items:
-    #         print "\t\\item {}".format(i)
-    #     print "\\end{enumerate}"
 
-    #model, l2_lambda = optimL2_lambda(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict)
-    # l2_lambda found is 0.007
+    model, performance_data = part4(real_training, fake_training, real_validation, fake_validation, real_test, fake_test, unique_words_dict, l2_lambda)
+    plot_learning_curve(performance_data)
+    logreg_stats = get_top_bottom_word_weights_logreg(model, wordlist)
+    logreg_stats_stop = get_top_bottom_word_weights_logreg(model, wordlist, ENGLISH_STOP_WORDS)
+
+    print "Part 6(a):"
+    format_list_as_tex(topbottom)
+
+    print "Part 6(b):"
+    format_list_as_tex(topbottom_stop)
 
 
     ############################## Part 7 ##############################
